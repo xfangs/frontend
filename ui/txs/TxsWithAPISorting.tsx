@@ -1,6 +1,5 @@
 import React from 'react';
 
-import type { TxsSocketType } from './socket/types';
 import type { AddressFromToFilter } from 'types/api/address';
 import type { TransactionsSortingValue } from 'types/api/transaction';
 
@@ -10,25 +9,29 @@ import getSortParamsFromValue from 'ui/shared/sort/getSortParamsFromValue';
 import TxsContent from './TxsContent';
 
 type Props = {
-
-  query: QueryWithPagesResult<'general:address_txs'>;
+  // eslint-disable-next-line max-len
+  query: QueryWithPagesResult<'address_txs'>;
   showBlockInfo?: boolean;
-  socketType?: TxsSocketType;
+  showSocketInfo?: boolean;
+  socketInfoAlert?: string;
+  socketInfoNum?: number;
   currentAddress?: string;
   filter?: React.ReactNode;
   filterValue?: AddressFromToFilter;
   enableTimeIncrement?: boolean;
   top?: number;
-  sorting: TransactionsSortingValue;
-  setSort: (value: TransactionsSortingValue) => void;
-};
+  sorting: TransactionsSortingValue | undefined;
+  setSort: (value?: TransactionsSortingValue) => void;
+}
 
 const TxsWithAPISorting = ({
   filter,
   filterValue,
   query,
   showBlockInfo = true,
-  socketType,
+  showSocketInfo = true,
+  socketInfoAlert,
+  socketInfoNum,
   currentAddress,
   enableTimeIncrement,
   top,
@@ -36,7 +39,7 @@ const TxsWithAPISorting = ({
   setSort,
 }: Props) => {
 
-  const handleSortChange = React.useCallback((value: TransactionsSortingValue) => {
+  const handleSortChange = React.useCallback((value?: TransactionsSortingValue) => {
     setSort(value);
     query.onSortingChange(getSortParamsFromValue(value));
   }, [ setSort, query ]);
@@ -46,7 +49,9 @@ const TxsWithAPISorting = ({
       filter={ filter }
       filterValue={ filterValue }
       showBlockInfo={ showBlockInfo }
-      socketType={ socketType }
+      showSocketInfo={ showSocketInfo }
+      socketInfoAlert={ socketInfoAlert }
+      socketInfoNum={ socketInfoNum }
       currentAddress={ currentAddress }
       enableTimeIncrement={ enableTimeIncrement }
       top={ top }
@@ -55,7 +60,7 @@ const TxsWithAPISorting = ({
       isError={ query.isError }
       setSorting={ handleSortChange }
       sort={ sorting }
-      pagination={ query.pagination }
+      query={ query }
     />
   );
 };

@@ -1,17 +1,15 @@
 import React from 'react';
 
-import type { SmartContractVerificationConfig } from 'types/client/contract';
-
 import ContractVerificationMethod from '../ContractVerificationMethod';
 import ContractVerificationFieldCompiler from '../fields/ContractVerificationFieldCompiler';
 import ContractVerificationFieldSources from '../fields/ContractVerificationFieldSources';
 
 const FILE_TYPES = [ '.json' as const ];
 
-const ContractVerificationVyperStandardInput = ({ config }: { config: SmartContractVerificationConfig }) => {
+const ContractVerificationVyperStandardInput = () => {
   return (
     <ContractVerificationMethod title="Contract verification via Vyper (standard JSON input) ">
-      <ContractVerificationFieldCompiler config={ config } isVyper/>
+      <ContractVerificationFieldCompiler isVyper/>
       <ContractVerificationFieldSources
         fileTypes={ FILE_TYPES }
         title="Standard Input JSON"

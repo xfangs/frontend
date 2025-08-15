@@ -1,6 +1,6 @@
-import { uniq } from 'es-toolkit';
+import { uniq } from 'lodash';
 
-import { isBrowser } from 'toolkit/utils/isBrowser';
+import isBrowser from './isBrowser';
 
 const RECENT_KEYWORDS_LS_KEY = 'recent_search_keywords';
 const MAX_KEYWORDS_NUMBER = 10;

@@ -1,55 +1,64 @@
-import { Box, Flex } from '@chakra-ui/react';
+import { Tr, Td, Box, Flex, Skeleton } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
 import React from 'react';
 
 import type { InternalTransaction } from 'types/api/internalTransaction';
 
 import config from 'configs/app';
-import { Badge } from 'toolkit/chakra/badge';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { TableCell, TableRow } from 'toolkit/chakra/table';
-import AddressFromTo from 'ui/shared/address/AddressFromTo';
+import Tag from 'ui/shared/chakra/Tag';
+import AddressEntity from 'ui/shared/entities/address/AddressEntity';
+import IconSvg from 'ui/shared/IconSvg';
 import TxStatus from 'ui/shared/statusTag/TxStatus';
 import { TX_INTERNALS_ITEMS } from 'ui/tx/internals/utils';
 
 type Props = InternalTransaction & {
   isLoading?: boolean;
-};
+}
 
 const TxInternalTableItem = ({ type, from, to, value, success, error, gas_limit: gasLimit, created_contract: createdContract, isLoading }: Props) => {
   const typeTitle = TX_INTERNALS_ITEMS.find(({ id }) => id === type)?.title;
   const toData = to ? to : createdContract;
 
   return (
-    <TableRow alignItems="top">
-      <TableCell>
+    <Tr alignItems="top">
+      <Td>
         <Flex rowGap={ 2 } flexWrap="wrap">
           { typeTitle && (
             <Box w="126px" display="inline-block">
-              <Badge colorPalette="cyan" mr={ 5 } loading={ isLoading }>{ typeTitle }</Badge>
+              <Tag colorScheme="cyan" mr={ 5 } isLoading={ isLoading }>{ typeTitle }</Tag>
             </Box>
           ) }
           <TxStatus status={ success ? 'ok' : 'error' } errorText={ error } isLoading={ isLoading }/>
         </Flex>
-      </TableCell>
-      <TableCell verticalAlign="middle">
-        <AddressFromTo
-          from={ from }
-          to={ toData }
+      </Td>
+      <Td verticalAlign="middle">
+        <AddressEntity
+          address={ from }
           isLoading={ isLoading }
         />
-      </TableCell>
-      <TableCell isNumeric verticalAlign="middle">
-        <Skeleton loading={ isLoading } display="inline-block">
+      </Td>
+      <Td px={ 0 } verticalAlign="middle">
+        <IconSvg name="arrows/east" boxSize={ 6 } color="gray.500" isLoading={ isLoading } display="block"/>
+      </Td>
+      <Td verticalAlign="middle">
+        { toData && (
+          <AddressEntity
+            address={ toData }
+            isLoading={ isLoading }
+          />
+        ) }
+      </Td>
+      <Td isNumeric verticalAlign="middle">
+        <Skeleton isLoaded={ !isLoading } display="inline-block">
           { BigNumber(value).div(BigNumber(10 ** config.chain.currency.decimals)).toFormat() }
         </Skeleton>
-      </TableCell>
-      <TableCell isNumeric verticalAlign="middle">
-        <Skeleton loading={ isLoading } display="inline-block">
+      </Td>
+      <Td isNumeric verticalAlign="middle">
+        <Skeleton isLoaded={ !isLoading } display="inline-block">
           { BigNumber(gasLimit).toFormat() }
         </Skeleton>
-      </TableCell>
-    </TableRow>
+      </Td>
+    </Tr>
   );
 };
 

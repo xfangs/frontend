@@ -1,14 +1,15 @@
 import BigNumber from 'bignumber.js';
+import fpAdd from 'lodash/fp/add';
 
 import type { AddressTokenBalance } from 'types/api/address';
 import type { TokenType } from 'types/api/token';
 
 import sumBnReducer from 'lib/bigint/sumBnReducer';
-import { ZERO } from 'toolkit/utils/consts';
+import { ZERO } from 'lib/consts';
 
 export type TokenEnhancedData = AddressTokenBalance & {
   usd?: BigNumber ;
-};
+}
 
 export type Sort = 'desc' | 'asc';
 
@@ -21,13 +22,13 @@ export interface TokenSelectDataItem {
 
 type TokenGroup = [string, TokenSelectDataItem];
 
-const TOKEN_GROUPS_ORDER: Array<TokenType> = [ 'ERC-20', 'ERC-721', 'ERC-1155', 'ERC-404' ];
+const TOKEN_GROUPS_ORDER: Array<TokenType> = [ 'ERC-20', 'ERC-721', 'ERC-1155' ];
 
 export const sortTokenGroups = (groupA: TokenGroup, groupB: TokenGroup) => {
   return TOKEN_GROUPS_ORDER.indexOf(groupA[0] as TokenType) > TOKEN_GROUPS_ORDER.indexOf(groupB[0] as TokenType) ? 1 : -1;
 };
 
-const sortErc1155or404Tokens = (sort: Sort) => (dataA: AddressTokenBalance, dataB: AddressTokenBalance) => {
+const sortErc1155Tokens = (sort: Sort) => (dataA: AddressTokenBalance, dataB: AddressTokenBalance) => {
   if (dataA.value === dataB.value) {
     return 0;
   }
@@ -37,7 +38,6 @@ const sortErc1155or404Tokens = (sort: Sort) => (dataA: AddressTokenBalance, data
 
   return Number(dataA.value) > Number(dataB.value) ? 1 : -1;
 };
-
 const sortErc20Tokens = (sort: Sort) => (dataA: TokenEnhancedData, dataB: TokenEnhancedData) => {
   if (!dataA.usd && !dataB.usd) {
     return 0;
@@ -63,13 +63,12 @@ const sortErc721Tokens = () => () => 0;
 export const sortingFns = {
   'ERC-20': sortErc20Tokens,
   'ERC-721': sortErc721Tokens,
-  'ERC-1155': sortErc1155or404Tokens,
-  'ERC-404': sortErc1155or404Tokens,
+  'ERC-1155': sortErc1155Tokens,
 };
 
 export const filterTokens = (searchTerm: string) => ({ token }: AddressTokenBalance) => {
   if (!token.name) {
-    return !searchTerm ? true : token.address_hash.toLowerCase().includes(searchTerm);
+    return !searchTerm ? true : token.address.toLowerCase().includes(searchTerm);
   }
 
   return token.name?.toLowerCase().includes(searchTerm);
@@ -99,7 +98,7 @@ export const getTokensTotalInfo = (data: TokenSelectData) => {
 
   const num = Object.values(data)
     .map(({ items }) => items.length)
-    .reduce((result, item) => result + item, 0);
+    .reduce(fpAdd, 0);
 
   const isOverflow = Object.values(data).some(({ isOverflow }) => isOverflow);
 

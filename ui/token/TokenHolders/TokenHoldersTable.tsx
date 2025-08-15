@@ -1,8 +1,9 @@
+import { Table, Tbody, Tr, Th } from '@chakra-ui/react';
 import React from 'react';
 
 import type { TokenHolder, TokenInfo } from 'types/api/token';
 
-import { TableBody, TableColumnHeader, TableHeaderSticky, TableRoot, TableRow } from 'toolkit/chakra/table';
+import { default as Thead } from 'ui/shared/TheadSticky';
 import TokenHoldersTableItem from 'ui/token/TokenHolders/TokenHoldersTableItem';
 
 interface Props {
@@ -14,21 +15,21 @@ interface Props {
 
 const TokenHoldersTable = ({ data, token, top, isLoading }: Props) => {
   return (
-    <TableRoot tableLayout="auto">
-      <TableHeaderSticky top={ top }>
-        <TableRow>
-          <TableColumnHeader>Holder</TableColumnHeader>
-          { (token.type === 'ERC-1155' || token.type === 'ERC-404') && <TableColumnHeader>ID#</TableColumnHeader> }
-          <TableColumnHeader isNumeric>Quantity</TableColumnHeader>
-          { token.total_supply && token.type !== 'ERC-404' && <TableColumnHeader isNumeric width="175px">Percentage</TableColumnHeader> }
-        </TableRow>
-      </TableHeaderSticky>
-      <TableBody>
+    <Table variant="simple" size="sm" layout="auto">
+      <Thead top={ top }>
+        <Tr>
+          <Th>Holder</Th>
+          { token.type === 'ERC-1155' && <Th>ID#</Th> }
+          <Th isNumeric>Quantity</Th>
+          { token.total_supply && <Th isNumeric width="175px">Percentage</Th> }
+        </Tr>
+      </Thead>
+      <Tbody>
         { data.map((item, index) => (
           <TokenHoldersTableItem key={ item.address.hash + (isLoading ? index : '') } holder={ item } token={ token } isLoading={ isLoading }/>
         )) }
-      </TableBody>
-    </TableRoot>
+      </Tbody>
+    </Table>
   );
 };
 

@@ -1,93 +1,109 @@
-import { Grid, Text } from '@chakra-ui/react';
-import React from 'react';
+import { Box, Button, Grid, Heading, Modal, ModalBody, ModalCloseButton, ModalContent, ModalOverlay, Text } from '@chakra-ui/react';
+import React, { useCallback } from 'react';
 
 import type { TimeChartItem } from './types';
-import type { Resolution } from '@blockscout/stats-types';
 
-import { Button } from 'toolkit/chakra/button';
-import { DialogBody, DialogContent, DialogHeader, DialogRoot } from 'toolkit/chakra/dialog';
-import { Heading } from 'toolkit/chakra/heading';
 import IconSvg from 'ui/shared/IconSvg';
 
-import ChartWidgetContent from './ChartWidgetContent';
+import ChartWidgetGraph from './ChartWidgetGraph';
 
 type Props = {
-  open: boolean;
-  onOpenChange: ({ open }: { open: boolean }) => void;
+  isOpen: boolean;
   title: string;
   description?: string;
   items: Array<TimeChartItem>;
+  onClose: () => void;
   units?: string;
-  resolution?: Resolution;
-  zoomRange?: [ Date, Date ];
-  handleZoom: (range: [ Date, Date ]) => void;
-  handleZoomReset: () => void;
-};
+}
 
 const FullscreenChartModal = ({
-  open,
-  onOpenChange,
+  isOpen,
   title,
   description,
   items,
   units,
-  resolution,
-  zoomRange,
-  handleZoom,
-  handleZoomReset,
+  onClose,
 }: Props) => {
+  const [ isZoomResetInitial, setIsZoomResetInitial ] = React.useState(true);
+
+  const handleZoom = useCallback(() => {
+    setIsZoomResetInitial(false);
+  }, []);
+
+  const handleZoomResetClick = useCallback(() => {
+    setIsZoomResetInitial(true);
+  }, []);
+
   return (
-    <DialogRoot
-      open={ open }
-      onOpenChange={ onOpenChange }
-      // FIXME: with size="full" the chart will not be expanded to the full height of the modal
-      size="cover"
+    <Modal
+      isOpen={ isOpen }
+      onClose={ onClose }
+      size="full"
+      isCentered
     >
-      <DialogContent>
-        <DialogHeader/>
-        <DialogBody pt={ 6 } display="flex" flexDir="column">
-          <Grid gridColumnGap={ 2 } mb={ 4 }>
-            <Heading mb={ 1 } level="2">
+      <ModalOverlay/>
+
+      <ModalContent>
+
+        <Box
+          mb={ 1 }
+        >
+          <Grid
+            gridColumnGap={ 2 }
+          >
+            <Heading
+              mb={ 1 }
+              size={{ base: 'xs', sm: 'md' }}
+            >
               { title }
             </Heading>
 
             { description && (
               <Text
                 gridColumn={ 1 }
-                color="text.secondary"
-                textStyle="sm"
+                as="p"
+                variant="secondary"
+                fontSize="xs"
               >
                 { description }
               </Text>
             ) }
 
-            { Boolean(zoomRange) && (
+            { !isZoomResetInitial && (
               <Button
+                leftIcon={ <IconSvg name="repeat_arrow" w={ 4 } h={ 4 }/> }
+                colorScheme="blue"
                 gridColumn={ 2 }
                 justifySelf="end"
                 alignSelf="top"
                 gridRow="1/3"
                 size="sm"
                 variant="outline"
-                onClick={ handleZoomReset }
+                onClick={ handleZoomResetClick }
               >
-                <IconSvg name="repeat" w={ 4 } h={ 4 }/>
                 Reset zoom
               </Button>
             ) }
           </Grid>
-          <ChartWidgetContent
+        </Box>
+
+        <ModalCloseButton/>
+
+        <ModalBody
+          h="100%"
+        >
+          <ChartWidgetGraph
+            margin={{ bottom: 60 }}
             isEnlarged
             items={ items }
             units={ units }
-            handleZoom={ handleZoom }
-            zoomRange={ zoomRange }
+            onZoom={ handleZoom }
+            isZoomResetInitial={ isZoomResetInitial }
             title={ title }
-            resolution={ resolution }
           />
-        </DialogBody>
-      </DialogContent>
-    </DialogRoot>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 };
 

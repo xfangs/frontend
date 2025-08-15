@@ -1,4 +1,4 @@
-import { Box, Grid } from '@chakra-ui/react';
+import { Box, Grid, Link, Skeleton } from '@chakra-ui/react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
 import { useRouter } from 'next/router';
@@ -7,20 +7,13 @@ import { scroller } from 'react-scroll';
 
 import type { TokenInfo } from 'types/api/token';
 
-import config from 'configs/app';
 import type { ResourceError } from 'lib/api/resources';
 import useApiQuery from 'lib/api/useApiQuery';
-import throwOnResourceLoadError from 'lib/errors/throwOnResourceLoadError';
 import getCurrencyValue from 'lib/getCurrencyValue';
-import useIsMounted from 'lib/hooks/useIsMounted';
 import { TOKEN_COUNTERS } from 'stubs/token';
-import { Link } from 'toolkit/chakra/link';
-import { Skeleton } from 'toolkit/chakra/skeleton';
 import type { TokenTabs } from 'ui/pages/Token';
-import AppActionButton from 'ui/shared/AppActionButton/AppActionButton';
-import useAppActionData from 'ui/shared/AppActionButton/useAppActionData';
-import * as DetailedInfo from 'ui/shared/DetailedInfo/DetailedInfo';
-import DetailedInfoSponsoredItem from 'ui/shared/DetailedInfo/DetailedInfoSponsoredItem';
+import DetailsInfoItem from 'ui/shared/DetailsInfoItem';
+import DetailsSponsoredItem from 'ui/shared/DetailsSponsoredItem';
 import TruncatedValue from 'ui/shared/TruncatedValue';
 
 import TokenNftMarketplaces from './TokenNftMarketplaces';
@@ -31,16 +24,12 @@ interface Props {
 
 const TokenDetails = ({ tokenQuery }: Props) => {
   const router = useRouter();
-  const isMounted = useIsMounted();
-
   const hash = router.query.hash?.toString();
 
-  const tokenCountersQuery = useApiQuery('general:token_counters', {
+  const tokenCountersQuery = useApiQuery('token_counters', {
     pathParams: { hash },
     queryOptions: { enabled: Boolean(router.query.hash), placeholderData: TOKEN_COUNTERS },
   });
-
-  const appActionData = useAppActionData(hash);
 
   const changeUrlAndScroll = useCallback((tab: TokenTabs) => () => {
     router.push(
@@ -66,16 +55,16 @@ const TokenDetails = ({ tokenQuery }: Props) => {
     const tab: TokenTabs = item === 'token_holders_count' ? 'holders' : 'token_transfers';
 
     return (
-      <Link onClick={ changeUrlAndScroll(tab) } loading={ tokenCountersQuery.isPlaceholderData }>
-        { Number(itemValue).toLocaleString() }
-      </Link>
+      <Skeleton isLoaded={ !tokenCountersQuery.isPlaceholderData }>
+        <Link onClick={ changeUrlAndScroll(tab) }>
+          { Number(itemValue).toLocaleString() }
+        </Link>
+      </Skeleton>
     );
   }, [ tokenCountersQuery.data, tokenCountersQuery.isPlaceholderData, changeUrlAndScroll ]);
 
-  throwOnResourceLoadError(tokenQuery);
-
-  if (!isMounted) {
-    return null;
+  if (tokenQuery.isError) {
+    throw Error('Token fetch error', { cause: tokenQuery.error as unknown as Error });
   }
 
   const {
@@ -89,7 +78,7 @@ const TokenDetails = ({ tokenQuery }: Props) => {
 
   let totalSupplyValue;
 
-  if (decimals) {
+  if (type === 'ERC-20') {
     const totalValue = totalSupply ? getCurrencyValue({ value: totalSupply, accuracy: 3, accuracyUsd: 2, exchangeRate, decimals }) : undefined;
     totalSupplyValue = totalValue?.valueStr;
   } else {
@@ -103,120 +92,79 @@ const TokenDetails = ({ tokenQuery }: Props) => {
       templateColumns={{ base: 'minmax(0, 1fr)', lg: 'auto minmax(0, 1fr)' }} overflow="hidden"
     >
       { exchangeRate && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Price per token on the exchanges"
-            isLoading={ tokenQuery.isPlaceholderData }
-          >
-            Price
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue>
-            <Skeleton loading={ tokenQuery.isPlaceholderData } display="inline-block">
-              <span>{ `$${ Number(exchangeRate).toLocaleString(undefined, { minimumSignificantDigits: 4 }) }` }</span>
-            </Skeleton>
-          </DetailedInfo.ItemValue>
-        </>
+        <DetailsInfoItem
+          title="Price"
+          hint="Price per token on the exchanges"
+          alignSelf="center"
+          isLoading={ tokenQuery.isPlaceholderData }
+        >
+          <Skeleton isLoaded={ !tokenQuery.isPlaceholderData } display="inline-block">
+            <span>{ `$${ Number(exchangeRate).toLocaleString(undefined, { minimumSignificantDigits: 4 }) }` }</span>
+          </Skeleton>
+        </DetailsInfoItem>
       ) }
-
       { marketCap && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Circulating supply * Price"
-            isLoading={ tokenQuery.isPlaceholderData }
-          >
-            Market cap
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue>
-            <Skeleton loading={ tokenQuery.isPlaceholderData } display="inline-block">
-              <span>{ `$${ BigNumber(marketCap).toFormat() }` }</span>
-            </Skeleton>
-          </DetailedInfo.ItemValue>
-        </>
+        <DetailsInfoItem
+          title="Fully diluted market cap"
+          hint="Total supply * Price"
+          alignSelf="center"
+          isLoading={ tokenQuery.isPlaceholderData }
+        >
+          <Skeleton isLoaded={ !tokenQuery.isPlaceholderData } display="inline-block">
+            <span>{ `$${ BigNumber(marketCap).toFormat() }` }</span>
+          </Skeleton>
+        </DetailsInfoItem>
       ) }
-
-      <DetailedInfo.ItemLabel
+      <DetailsInfoItem
+        title="Max total supply"
         hint="The total amount of tokens issued"
-        isLoading={ tokenQuery.isPlaceholderData }
-      >
-        Max total supply
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue
         alignSelf="center"
         wordBreak="break-word"
         whiteSpace="pre-wrap"
+        isLoading={ tokenQuery.isPlaceholderData }
       >
-        <Skeleton loading={ tokenQuery.isPlaceholderData } w="100%" display="flex">
+        <Skeleton isLoaded={ !tokenQuery.isPlaceholderData } w="100%" display="flex">
           <TruncatedValue value={ totalSupplyValue || '0' } maxW="80%" flexShrink={ 0 }/>
           <Box flexShrink={ 0 }> </Box>
           <TruncatedValue value={ symbol || '' }/>
         </Skeleton>
-      </DetailedInfo.ItemValue>
-
-      <DetailedInfo.ItemLabel
+      </DetailsInfoItem>
+      <DetailsInfoItem
+        title="Holders"
         hint="Number of accounts holding the token"
+        alignSelf="center"
         isLoading={ tokenQuery.isPlaceholderData }
       >
-        Holders
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue>
-        <Skeleton loading={ tokenCountersQuery.isPlaceholderData }>
+        <Skeleton isLoaded={ !tokenCountersQuery.isPlaceholderData }>
           { countersItem('token_holders_count') }
         </Skeleton>
-      </DetailedInfo.ItemValue>
-
-      <DetailedInfo.ItemLabel
+      </DetailsInfoItem>
+      <DetailsInfoItem
+        title="Transfers"
         hint="Number of transfer for the token"
+        alignSelf="center"
         isLoading={ tokenQuery.isPlaceholderData }
       >
-        Transfers
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue>
-        <Skeleton loading={ tokenCountersQuery.isPlaceholderData }>
+        <Skeleton isLoaded={ !tokenCountersQuery.isPlaceholderData }>
           { countersItem('transfers_count') }
         </Skeleton>
-      </DetailedInfo.ItemValue>
-
+      </DetailsInfoItem>
       { decimals && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Number of digits that come after the decimal place when displaying token value"
-            isLoading={ tokenQuery.isPlaceholderData }
-          >
-            Decimals
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue>
-            <Skeleton loading={ tokenQuery.isPlaceholderData } minW={ 6 }>
-              { decimals }
-            </Skeleton>
-          </DetailedInfo.ItemValue>
-        </>
-      ) }
-
-      { type !== 'ERC-20' && (
-        <TokenNftMarketplaces
-          hash={ hash }
+        <DetailsInfoItem
+          title="Decimals"
+          hint="Number of digits that come after the decimal place when displaying token value"
+          alignSelf="center"
           isLoading={ tokenQuery.isPlaceholderData }
-          appActionData={ appActionData }
-          source="NFT collection"
-        />
+        >
+          <Skeleton isLoaded={ !tokenQuery.isPlaceholderData } minW={ 6 }>
+            { decimals }
+          </Skeleton>
+        </DetailsInfoItem>
       ) }
 
-      { (type !== 'ERC-20' && config.UI.views.nft.marketplaces.length === 0 && appActionData) && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Link to the dapp"
-          >
-            Dapp
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue
-            py="1px"
-          >
-            <AppActionButton data={ appActionData } height="30px" source="NFT collection"/>
-          </DetailedInfo.ItemValue>
-        </>
-      ) }
+      { type !== 'ERC-20' && <TokenNftMarketplaces hash={ hash } isLoading={ tokenQuery.isPlaceholderData }/> }
 
-      <DetailedInfoSponsoredItem isLoading={ tokenQuery.isPlaceholderData }/>
+      <DetailsSponsoredItem isLoading={ tokenQuery.isPlaceholderData }/>
     </Grid>
   );
 };

@@ -1,4 +1,4 @@
-const OLD_UI_URLS = [
+const oldUrls = [
   // ACCOUNT
   {
     source: '/account/tag_address',
@@ -49,12 +49,16 @@ const OLD_UI_URLS = [
     destination: '/account/custom-abi',
   },
   {
-    source: '/account/public-tags-request',
-    destination: '/public-tags/submit',
+    source: '/account/public_tags_request',
+    destination: '/account/public-tags-request',
   },
   {
-    source: '/account/rewards',
-    destination: '/account/merits',
+    source: '/account/public_tags_request/:id/edit',
+    destination: '/account/public-tags-request',
+  },
+  {
+    source: '/account/public_tags_request/new',
+    destination: '/account/public-tags-request',
   },
 
   // TRANSACTIONS
@@ -238,114 +242,11 @@ const OLD_UI_URLS = [
     source: '/token/:hash/write-proxy',
     destination: '/token/:hash?tab=write_proxy',
   },
-
-  // ROLLUPs
-  {
-    source: '/l2-txn-batches',
-    destination: '/batches',
-  },
-  {
-    source: '/zkevm-l2-txn-batches',
-    destination: '/batches',
-  },
-  {
-    source: '/zkevm-l2-txn-batch/:path*',
-    destination: '/batches/:path*',
-  },
-  {
-    source: '/l2-deposits',
-    destination: '/deposits',
-  },
-  {
-    source: '/l2-withdrawals',
-    destination: '/withdrawals',
-  },
-  {
-    source: '/l2-output-roots',
-    destination: '/output-roots',
-  },
-];
-
-const ETHERSCAN_URLS = [
-  {
-    source: '/txsAA',
-    destination: '/ops',
-  },
-  {
-    source: '/txs',
-    has: [
-      { type: 'query', key: 'block' },
-    ],
-    destination: '/block/:block?tab=txs',
-  },
-  {
-    source: '/txsInternal',
-    has: [
-      { type: 'query', key: 'block' },
-    ],
-    destination: '/block/:block?tab=internal_txs',
-  },
-  {
-    source: '/txsInternal',
-    destination: '/internal-txs',
-  },
-  {
-    source: '/blocks_forked',
-    destination: '/blocks?tab=reorgs',
-  },
-  {
-    source: '/contractsVerified',
-    destination: '/verified-contracts',
-  },
-  {
-    source: '/verifyContract',
-    has: [
-      { type: 'query', key: 'a' },
-    ],
-    destination: '/address/:a/contract-verification',
-  },
-  {
-    source: '/verifyContract',
-    destination: '/contract-verification',
-  },
-  {
-    source: '/tokentxns',
-    destination: '/token-transfers',
-  },
-  {
-    source: '/nft/:hash/:id',
-    destination: '/token/:hash/instance/:id',
-  },
-  {
-    source: '/charts',
-    destination: '/stats',
-  },
-  {
-    source: '/nft-latest-mints',
-    destination: '/advanced-filter?transaction_types=ERC-1155%2CERC-721&methods=0xa0712d68&methods_names=mint',
-  },
-  {
-    source: '/nft-transfers',
-    destination: '/advanced-filter?transaction_types=ERC-1155%2CERC-721',
-  },
-  {
-    source: '/name-lookup-search',
-    destination: '/name-domains',
-  },
-  {
-    source: '/txsExit',
-    destination: '/withdrawals',
-  },
-  {
-    source: '/txsEnqueued',
-    destination: '/deposits',
-  },
 ];
 
 async function redirects() {
   return [
-    ...OLD_UI_URLS.map((item) => ({ ...item, permanent: false })),
-    ...ETHERSCAN_URLS.map((item) => ({ ...item, permanent: true })),
+    ...oldUrls.map((item) => ({ ...item, permanent: false })),
   ];
 }
 

@@ -1,9 +1,7 @@
-import { Text, Flex, useCheckboxGroup, chakra } from '@chakra-ui/react';
+import { CheckboxGroup, Checkbox, Text, Flex, Link, useCheckboxGroup, chakra } from '@chakra-ui/react';
 import React from 'react';
 
 import config from 'configs/app';
-import { Button } from 'toolkit/chakra/button';
-import { Checkbox, CheckboxGroup } from 'toolkit/chakra/checkbox';
 
 const feature = config.features.bridgedTokens;
 
@@ -34,22 +32,23 @@ const TokensBridgedChainsFilter = ({ onChange, defaultValue }: Props) => {
 
   return (
     <>
-      <Flex justifyContent="space-between" textStyle="sm">
-        <Text fontWeight={ 600 } color="text.secondary">Show bridged tokens from</Text>
-        <Button
-          variant="link"
+      <Flex justifyContent="space-between" fontSize="sm">
+        <Text fontWeight={ 600 } variant="secondary">Show bridged tokens from</Text>
+        <Link
           onClick={ handleReset }
-          disabled={ value.length === 0 }
-          textStyle="sm"
+          color={ value.length > 0 ? 'link' : 'text_secondary' }
+          _hover={{
+            color: value.length > 0 ? 'link_hovered' : 'text_secondary',
+          }}
         >
           Reset
-        </Button>
+        </Link>
       </Flex>
-      <CheckboxGroup defaultValue={ defaultValue } onValueChange={ handleChange } value={ value } name="bridged_token_chain">
+      <CheckboxGroup size="lg" onChange={ handleChange } value={ value }>
         { feature.chains.map(({ title, id, short_title: shortTitle }) => (
-          <Checkbox key={ id } value={ id } whiteSpace="pre-wrap">
+          <Checkbox key={ id } value={ id } fontSize="md" whiteSpace="pre-wrap">
             <span>{ title }</span>
-            <chakra.span color="text.secondary"> ({ shortTitle })</chakra.span>
+            <chakra.span color="text_secondary"> ({ shortTitle })</chakra.span>
           </Checkbox>
         )) }
       </CheckboxGroup>

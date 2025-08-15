@@ -1,61 +1,41 @@
-import { createListCollection } from '@chakra-ui/react';
+import { Box, Flex, Select, Textarea } from '@chakra-ui/react';
 import React from 'react';
 
 import hexToUtf8 from 'lib/hexToUtf8';
-import type { SelectOption } from 'toolkit/chakra/select';
-import { Select } from 'toolkit/chakra/select';
-import RawDataSnippet from 'ui/shared/RawDataSnippet';
+import CopyToClipboard from 'ui/shared/CopyToClipboard';
 
-const OPTIONS = [
-  { label: 'Hex', value: 'Hex' as const },
-  { label: 'UTF-8', value: 'UTF-8' as const },
-];
-
-const collection = createListCollection<SelectOption>({
-  items: OPTIONS,
-});
-
-export type DataType = (typeof OPTIONS)[number]['value'];
+type DataType = 'Hex' | 'UTF-8'
+const OPTIONS: Array<DataType> = [ 'Hex', 'UTF-8' ];
 
 interface Props {
   hex: string;
-  rightSlot?: React.ReactNode;
-  defaultDataType?: DataType;
-  isLoading?: boolean;
-  minHeight?: string;
 }
 
-const RawInputData = ({ hex, rightSlot: rightSlotProp, defaultDataType = 'Hex', isLoading, minHeight }: Props) => {
-  const [ selectedDataType, setSelectedDataType ] = React.useState<DataType>(defaultDataType);
+const RawInputData = ({ hex }: Props) => {
+  const [ selectedDataType, setSelectedDataType ] = React.useState<DataType>('Hex');
 
-  const handleValueChange = React.useCallback(({ value }: { value: Array<string> }) => {
-    setSelectedDataType(value[0] as DataType);
+  const handleSelectChange = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedDataType(event.target.value as DataType);
   }, []);
 
-  const rightSlot = (
-    <>
-      <Select
-        collection={ collection }
-        placeholder="Select type"
-        defaultValue={ [ defaultDataType ] }
-        onValueChange={ handleValueChange }
-        w="100px"
-        mr="auto"
-        loading={ isLoading }
-      />
-      { rightSlotProp }
-    </>
-  );
-
   return (
-    <RawDataSnippet
-      data={ selectedDataType === 'Hex' ? hex : hexToUtf8(hex) }
-      rightSlot={ rightSlot }
-      isLoading={ isLoading }
-      textareaMaxHeight="220px"
-      textareaMinHeight={ minHeight || '160px' }
-      w="100%"
-    />
+    <Box w="100%">
+      <Flex justifyContent="space-between" alignItems="center">
+        <Select size="xs" borderRadius="base" value={ selectedDataType } onChange={ handleSelectChange } focusBorderColor="none" w="auto">
+          { OPTIONS.map((option) => <option key={ option } value={ option }>{ option }</option>) }
+        </Select>
+        <CopyToClipboard text={ hex }/>
+      </Flex>
+      <Textarea
+        value={ selectedDataType === 'Hex' ? hex : hexToUtf8(hex) }
+        w="100%"
+        maxH="220px"
+        mt={ 2 }
+        p={ 4 }
+        variant="filledInactive"
+        fontSize="sm"
+      />
+    </Box>
   );
 };
 

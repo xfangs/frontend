@@ -1,11 +1,11 @@
+import { Modal, ModalBody, ModalCloseButton, ModalContent, ModalHeader, ModalOverlay, Link } from '@chakra-ui/react';
 import React from 'react';
 
 import type { AddressVerificationFormFirstStepFields, AddressCheckStatusSuccess } from './types';
 import type { VerifiedAddress } from 'types/api/account';
 
-import config from 'configs/app';
 import * as mixpanel from 'lib/mixpanel/index';
-import { DialogBody, DialogContent, DialogHeader, DialogRoot } from 'toolkit/chakra/dialog';
+import IconSvg from 'ui/shared/IconSvg';
 import Web3ModalProvider from 'ui/shared/Web3ModalProvider';
 
 import AddressVerificationStepAddress from './steps/AddressVerificationStepAddress';
@@ -15,8 +15,8 @@ import AddressVerificationStepSuccess from './steps/AddressVerificationStepSucce
 type StateData = AddressVerificationFormFirstStepFields & AddressCheckStatusSuccess & { isToken?: boolean };
 
 interface Props {
-  open: boolean;
-  onOpenChange: ({ open }: { open: boolean }) => void;
+  isOpen: boolean;
+  onClose: () => void;
   onSubmit: (address: VerifiedAddress) => void;
   onAddTokenInfoClick: (address: string) => void;
   onShowListClick: () => void;
@@ -24,16 +24,16 @@ interface Props {
   pageType: string;
 }
 
-const AddressVerificationModal = ({ defaultAddress, open, onOpenChange, onSubmit, onAddTokenInfoClick, onShowListClick, pageType }: Props) => {
+const AddressVerificationModal = ({ defaultAddress, isOpen, onClose, onSubmit, onAddTokenInfoClick, onShowListClick, pageType }: Props) => {
   const [ stepIndex, setStepIndex ] = React.useState(0);
   const [ data, setData ] = React.useState<StateData>({ address: '', signingMessage: '' });
 
   React.useEffect(() => {
-    open && mixpanel.logEvent(
+    isOpen && mixpanel.logEvent(
       mixpanel.EventTypes.VERIFY_ADDRESS,
       { Action: 'Form opened', 'Page type': pageType },
     );
-  }, [ open, pageType ]);
+  }, [ isOpen, pageType ]);
 
   const handleGoToSecondStep = React.useCallback((firstStepResult: typeof data) => {
     setData(firstStepResult);
@@ -58,18 +58,16 @@ const AddressVerificationModal = ({ defaultAddress, open, onOpenChange, onSubmit
     setStepIndex((prev) => prev - 1);
   }, []);
 
-  const handleOpenChange = React.useCallback(({ open }: { open: boolean }) => {
-    onOpenChange({ open });
-    if (!open) {
-      setStepIndex(0);
-      setData({ address: '', signingMessage: '' });
-    }
-  }, [ onOpenChange ]);
+  const handleClose = React.useCallback(() => {
+    onClose();
+    setStepIndex(0);
+    setData({ address: '', signingMessage: '' });
+  }, [ onClose ]);
 
   const handleAddTokenInfoClick = React.useCallback(() => {
     onAddTokenInfoClick(data.address);
-    handleOpenChange({ open: false });
-  }, [ handleOpenChange, data.address, onAddTokenInfoClick ]);
+    handleClose();
+  }, [ handleClose, data.address, onAddTokenInfoClick ]);
 
   const steps = [
     {
@@ -78,13 +76,8 @@ const AddressVerificationModal = ({ defaultAddress, open, onOpenChange, onSubmit
     },
     {
       title: 'Copy and sign message',
-      content: (
-        <AddressVerificationStepSignature
-          { ...data }
-          onContinue={ handleGoToThirdStep }
-          noWeb3Provider={ !config.features.blockchainInteraction.isEnabled }
-        />
-      ),
+      content: <AddressVerificationStepSignature { ...data } onContinue={ handleGoToThirdStep }/>,
+      fallback: <AddressVerificationStepSignature { ...data } onContinue={ handleGoToThirdStep } noWeb3Provider/>,
     },
     {
       title: 'Congrats! Address is verified.',
@@ -101,26 +94,25 @@ const AddressVerificationModal = ({ defaultAddress, open, onOpenChange, onSubmit
   const step = steps[stepIndex];
 
   return (
-    <DialogRoot
-      open={ open }
-      onOpenChange={ handleOpenChange }
-      size={{ lgDown: 'full', lg: 'md' }}
-      closeOnInteractOutside={ false }
-      modal={ false }
-      trapFocus={ false }
-      preventScroll={ false }
-    >
-      <DialogContent>
-        <DialogHeader onBackToClick={ stepIndex !== 0 ? handleGoToPrevStep : undefined }>
-          { step.title }
-        </DialogHeader>
-        <DialogBody mb={ 0 }>
-          <Web3ModalProvider>
+    <Modal isOpen={ isOpen } onClose={ handleClose } size={{ base: 'full', lg: 'md' }}>
+      <ModalOverlay/>
+      <ModalContent>
+        <ModalHeader fontWeight="500" textStyle="h3" mb={ 6 }>
+          { stepIndex !== 0 && (
+            <Link mr={ 3 } onClick={ handleGoToPrevStep }>
+              <IconSvg name="arrows/east" boxSize={ 6 } transform="rotate(180deg)" verticalAlign="middle"/>
+            </Link>
+          ) }
+          <span>{ step.title }</span>
+        </ModalHeader>
+        <ModalCloseButton/>
+        <ModalBody mb={ 0 }>
+          <Web3ModalProvider fallback={ step?.fallback || step.content }>
             { step.content }
           </Web3ModalProvider>
-        </DialogBody>
-      </DialogContent>
-    </DialogRoot>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 };
 

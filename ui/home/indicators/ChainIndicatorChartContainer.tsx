@@ -1,4 +1,5 @@
-import { chakra, Box } from '@chakra-ui/react';
+import { Flex } from '@chakra-ui/react';
+import type { UseQueryResult } from '@tanstack/react-query';
 import React from 'react';
 
 import type { TimeChartData } from 'ui/shared/chart/types';
@@ -6,33 +7,25 @@ import type { TimeChartData } from 'ui/shared/chart/types';
 import ContentLoader from 'ui/shared/ContentLoader';
 import DataFetchAlert from 'ui/shared/DataFetchAlert';
 
-import ChainIndicatorChartContent from './ChainIndicatorChartContent';
+import ChainIndicatorChart from './ChainIndicatorChart';
 
-type Props = {
-  data: TimeChartData;
-  isError: boolean;
-  isPending: boolean;
-};
+type Props = UseQueryResult<TimeChartData>;
 
 const ChainIndicatorChartContainer = ({ data, isError, isPending }: Props) => {
 
-  if (isPending) {
-    return <ContentLoader mt="auto" fontSize="xs"/>;
-  }
+  const content = (() => {
+    if (isPending) {
+      return <ContentLoader mt="auto"/>;
+    }
 
-  if (isError) {
-    return <DataFetchAlert fontSize="xs"/>;
-  }
+    if (isError) {
+      return <DataFetchAlert/>;
+    }
 
-  if (data[0].items.length === 0) {
-    return <chakra.span fontSize="xs">no data</chakra.span>;
-  }
+    return <ChainIndicatorChart data={ data }/>;
+  })();
 
-  return (
-    <Box mx="-10px" my="-5px" h="calc(100% + 10px)" w="calc(100% + 20px)">
-      <ChainIndicatorChartContent data={ data }/>
-    </Box>
-  );
+  return <Flex h={{ base: '150px', lg: 'auto' }} minH="150px" alignItems="flex-start" flexGrow={ 1 }>{ content }</Flex>;
 };
 
 export default React.memo(ChainIndicatorChartContainer);

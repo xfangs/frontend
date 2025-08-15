@@ -1,23 +1,14 @@
-import { Flex, Text } from '@chakra-ui/react';
+import { Flex, Skeleton, Text, useColorModeValue } from '@chakra-ui/react';
 import React from 'react';
-
-import type { TChainIndicator } from './types';
-import type { ChainIndicatorId } from 'types/homepage';
 
 import config from 'configs/app';
 import useApiQuery from 'lib/api/useApiQuery';
-import { HOMEPAGE_STATS, HOMEPAGE_STATS_MICROSERVICE } from 'stubs/stats';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { Hint } from 'toolkit/components/Hint/Hint';
-import IconSvg from 'ui/shared/IconSvg';
+import Hint from 'ui/shared/Hint';
 
 import ChainIndicatorChartContainer from './ChainIndicatorChartContainer';
 import ChainIndicatorItem from './ChainIndicatorItem';
-import useChartDataQuery from './useChartDataQuery';
-import getIndicatorValues from './utils/getIndicatorValues';
+import useFetchChartData from './useFetchChartData';
 import INDICATORS from './utils/indicators';
-
-const isStatsFeatureEnabled = config.features.stats.isEnabled;
 
 const indicators = INDICATORS
   .filter(({ id }) => config.UI.homepage.charts.includes(id))
@@ -35,129 +26,75 @@ const indicators = INDICATORS
 
 const ChainIndicators = () => {
   const [ selectedIndicator, selectIndicator ] = React.useState(indicators[0]?.id);
-  const selectedIndicatorData = indicators.find(({ id }) => id === selectedIndicator);
+  const indicator = indicators.find(({ id }) => id === selectedIndicator);
 
-  const queryResult = useChartDataQuery(selectedIndicatorData?.id as ChainIndicatorId);
+  const queryResult = useFetchChartData(indicator);
+  const statsQueryResult = useApiQuery('homepage_stats');
 
-  const statsMicroserviceQueryResult = useApiQuery('stats:pages_main', {
-    queryOptions: {
-      refetchOnMount: false,
-      enabled: isStatsFeatureEnabled,
-      placeholderData: HOMEPAGE_STATS_MICROSERVICE,
-    },
-  });
-
-  const statsApiQueryResult = useApiQuery('general:stats', {
-    queryOptions: {
-      refetchOnMount: false,
-      placeholderData: HOMEPAGE_STATS,
-    },
-  });
+  const bgColorDesktop = useColorModeValue('white', 'gray.900');
+  const bgColorMobile = useColorModeValue('white', 'black');
+  const listBgColorDesktop = useColorModeValue('gray.50', 'black');
+  const listBgColorMobile = useColorModeValue('gray.50', 'gray.900');
 
   if (indicators.length === 0) {
     return null;
   }
 
-  const isPlaceholderData = (isStatsFeatureEnabled && statsMicroserviceQueryResult.isPlaceholderData) || statsApiQueryResult.isPlaceholderData;
-  const hasData = Boolean(statsApiQueryResult?.data || statsMicroserviceQueryResult?.data);
-
-  const { value: indicatorValue, valueDiff: indicatorValueDiff } =
-    getIndicatorValues(selectedIndicatorData as TChainIndicator, statsMicroserviceQueryResult?.data, statsApiQueryResult?.data);
-
-  const title = (() => {
-    let title: string | undefined;
-    if (isStatsFeatureEnabled && selectedIndicatorData?.titleMicroservice && statsMicroserviceQueryResult?.data) {
-      title = selectedIndicatorData.titleMicroservice(statsMicroserviceQueryResult.data);
-    }
-
-    return title || selectedIndicatorData?.title;
-  })();
-
-  const hint = (() => {
-    let hint: string | undefined;
-    if (isStatsFeatureEnabled && selectedIndicatorData?.hintMicroservice && statsMicroserviceQueryResult?.data) {
-      hint = selectedIndicatorData.hintMicroservice(statsMicroserviceQueryResult.data);
-    }
-
-    return hint || selectedIndicatorData?.hint;
-  })();
-
   const valueTitle = (() => {
-    if (isPlaceholderData) {
-      return <Skeleton loading h="36px" w="215px"/>;
+    if (statsQueryResult.isPending) {
+      return <Skeleton h="48px" w="215px" mt={ 3 } mb={ 4 }/>;
     }
 
-    if (!hasData) {
-      return <Text fontSize="xs">There is no data</Text>;
+    if (statsQueryResult.isError) {
+      return <Text mt={ 3 } mb={ 4 }>There is no data</Text>;
     }
 
     return (
-      <Text fontWeight={ 700 } fontSize="30px" lineHeight="36px">
-        { indicatorValue }
+      <Text fontWeight={ 600 } fontFamily="heading" fontSize="48px" lineHeight="48px" mt={ 3 } mb={ 4 }>
+        { indicator?.value(statsQueryResult.data) }
       </Text>
-    );
-  })();
-
-  const valueDiff = (() => {
-    if (indicatorValueDiff === undefined || indicatorValueDiff === null) {
-      return null;
-    }
-
-    const diffColor = indicatorValueDiff >= 0 ? 'green.500' : 'red.500';
-
-    return (
-      <Skeleton loading={ statsApiQueryResult.isPlaceholderData } display="flex" alignItems="center" color={ diffColor } ml={ 2 }>
-        <IconSvg name="arrows/up-head" boxSize={ 5 } mr={ 1 } transform={ indicatorValueDiff < 0 ? 'rotate(180deg)' : 'rotate(0)' }/>
-        <Text color={ diffColor } fontWeight={ 600 }>{ indicatorValueDiff }%</Text>
-      </Skeleton>
     );
   })();
 
   return (
     <Flex
-      px={{ base: 3, lg: 4 }}
-      py={ 3 }
-      borderRadius="base"
-      bgColor={{ _light: 'gray.50', _dark: 'whiteAlpha.100' }}
-      columnGap={{ base: 3, lg: 4 }}
+      p={{ base: 0, lg: 8 }}
+      borderRadius={{ base: 'none', lg: 'lg' }}
+      boxShadow={{ base: 'none', lg: 'xl' }}
+      bgColor={{ base: bgColorMobile, lg: bgColorDesktop }}
+      columnGap={ 12 }
       rowGap={ 0 }
-      flexBasis="50%"
-      flexGrow={ 1 }
+      flexDir={{ base: 'column', lg: 'row' }}
+      w="100%"
       alignItems="stretch"
+      mt={ 8 }
     >
-      <Flex flexGrow={ 1 } flexDir="column">
-        <Skeleton loading={ isPlaceholderData } display="flex" alignItems="center" w="fit-content" columnGap={ 1 }>
-          <Text fontWeight={ 500 }>{ title }</Text>
-          { hint && <Hint label={ hint }/> }
-        </Skeleton>
-        <Flex mb={{ base: 0, lg: 2 }} mt={ 1 } alignItems="end">
-          { valueTitle }
-          { valueDiff }
+      <Flex flexGrow={ 1 } flexDir="column" order={{ base: 2, lg: 1 }} p={{ base: 6, lg: 0 }}>
+        <Flex alignItems="center">
+          <Text fontWeight={ 500 } fontFamily="heading" fontSize="lg">{ indicator?.title }</Text>
+          { indicator?.hint && <Hint label={ indicator.hint } ml={ 1 }/> }
         </Flex>
-        <Flex h={{ base: '80px', lg: '110px' }} alignItems="flex-start" flexGrow={ 1 }>
-          <ChainIndicatorChartContainer { ...queryResult }/>
-        </Flex>
+        { valueTitle }
+        <ChainIndicatorChartContainer { ...queryResult }/>
       </Flex>
       { indicators.length > 1 && (
         <Flex
           flexShrink={ 0 }
           flexDir="column"
           as="ul"
+          p={ 3 }
           borderRadius="lg"
-          rowGap="6px"
-          m={{ base: 'auto 0', lg: 0 }}
+          bgColor={{ base: listBgColorMobile, lg: listBgColorDesktop }}
+          rowGap={ 3 }
+          order={{ base: 1, lg: 2 }}
         >
           { indicators.map((indicator) => (
             <ChainIndicatorItem
               key={ indicator.id }
-              id={ indicator.id }
-              title={ indicator.title }
-              icon={ indicator.icon }
+              { ...indicator }
               isSelected={ selectedIndicator === indicator.id }
               onClick={ selectIndicator }
-              { ...getIndicatorValues(indicator, statsMicroserviceQueryResult?.data, statsApiQueryResult?.data) }
-              isLoading={ isPlaceholderData }
-              hasData={ hasData }
+              stats={ statsQueryResult }
             />
           )) }
         </Flex>

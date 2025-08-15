@@ -1,4 +1,4 @@
-import { Box } from '@chakra-ui/react';
+import { Show, Hide } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import React from 'react';
 
@@ -6,13 +6,11 @@ import type { AddressFromToFilter } from 'types/api/address';
 import { AddressFromToFilterValues } from 'types/api/address';
 
 import getFilterValueFromQuery from 'lib/getFilterValueFromQuery';
-import useIsMounted from 'lib/hooks/useIsMounted';
+import { apos } from 'lib/html-entities';
 import getQueryParamString from 'lib/router/getQueryParamString';
 import { INTERNAL_TX } from 'stubs/internalTx';
 import { generateListStub } from 'stubs/utils';
-import { apos } from 'toolkit/utils/htmlEntities';
-import InternalTxsList from 'ui/internalTxs/InternalTxsList';
-import InternalTxsTable from 'ui/internalTxs/InternalTxsTable';
+import AddressIntTxsTable from 'ui/address/internals/AddressIntTxsTable';
 import ActionBar from 'ui/shared/ActionBar';
 import DataListDisplay from 'ui/shared/DataListDisplay';
 import Pagination from 'ui/shared/pagination/Pagination';
@@ -20,28 +18,23 @@ import useQueryWithPages from 'ui/shared/pagination/useQueryWithPages';
 
 import AddressCsvExportLink from './AddressCsvExportLink';
 import AddressTxsFilter from './AddressTxsFilter';
+import AddressIntTxsList from './internals/AddressIntTxsList';
 
 const getFilterValue = (getFilterValueFromQuery<AddressFromToFilter>).bind(null, AddressFromToFilterValues);
 
-type Props = {
-  shouldRender?: boolean;
-  isQueryEnabled?: boolean;
-};
-const AddressInternalTxs = ({ shouldRender = true, isQueryEnabled = true }: Props) => {
+const AddressInternalTxs = ({ scrollRef }: {scrollRef?: React.RefObject<HTMLDivElement>}) => {
   const router = useRouter();
-  const isMounted = useIsMounted();
-
   const [ filterValue, setFilterValue ] = React.useState<AddressFromToFilter>(getFilterValue(router.query.filter));
 
   const hash = getQueryParamString(router.query.hash);
 
   const { data, isPlaceholderData, isError, pagination, onFilterChange } = useQueryWithPages({
-    resourceName: 'general:address_internal_txs',
+    resourceName: 'address_internal_txs',
     pathParams: { hash },
     filters: { filter: filterValue },
+    scrollRef,
     options: {
-      enabled: isQueryEnabled,
-      placeholderData: generateListStub<'general:address_internal_txs'>(
+      placeholderData: generateListStub<'address_internal_txs'>(
         INTERNAL_TX,
         50,
         {
@@ -62,27 +55,23 @@ const AddressInternalTxs = ({ shouldRender = true, isQueryEnabled = true }: Prop
     onFilterChange({ filter: newVal });
   }, [ onFilterChange ]);
 
-  if (!isMounted || !shouldRender) {
-    return null;
-  }
-
   const content = data?.items ? (
     <>
-      <Box hideFrom="lg">
-        <InternalTxsList data={ data.items } currentAddress={ hash } isLoading={ isPlaceholderData }/>
-      </Box>
-      <Box hideBelow="lg">
-        <InternalTxsTable data={ data.items } currentAddress={ hash } isLoading={ isPlaceholderData }/>
-      </Box>
+      <Show below="lg" ssr={ false }>
+        <AddressIntTxsList data={ data.items } currentAddress={ hash } isLoading={ isPlaceholderData }/>
+      </Show>
+      <Hide below="lg" ssr={ false }>
+        <AddressIntTxsTable data={ data.items } currentAddress={ hash } isLoading={ isPlaceholderData }/>
+      </Hide>
     </>
   ) : null ;
 
   const actionBar = (
     <ActionBar mt={ -6 } justifyContent="left">
       <AddressTxsFilter
-        initialValue={ filterValue }
+        defaultFilter={ filterValue }
         onFilterChange={ handleFilterChange }
-        hasActiveFilter={ Boolean(filterValue) }
+        isActive={ Boolean(filterValue) }
         isLoading={ pagination.isLoading }
       />
       <AddressCsvExportLink
@@ -98,13 +87,12 @@ const AddressInternalTxs = ({ shouldRender = true, isQueryEnabled = true }: Prop
   return (
     <DataListDisplay
       isError={ isError }
-      itemsNum={ data?.items.length }
+      items={ data?.items }
       filterProps={{ emptyFilteredText: `Couldn${ apos }t find any transaction that matches your query.`, hasActiveFilters: Boolean(filterValue) }}
       emptyText="There are no internal transactions for this address."
+      content={ content }
       actionBar={ actionBar }
-    >
-      { content }
-    </DataListDisplay>
+    />
   );
 };
 

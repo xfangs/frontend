@@ -1,7 +1,7 @@
 import { Flex, Box } from '@chakra-ui/react';
 import React from 'react';
 
-import { stripLeadingSlash } from 'toolkit/utils/url';
+import stripLeadingSlash from 'lib/stripLeadingSlash';
 import useThemeColors from 'ui/shared/monaco/utils/useThemeColors';
 
 interface Props {

@@ -8,12 +8,4 @@ export type CsvExportParams = {
   type: 'logs';
   filterType?: 'topic';
   filterValue?: string;
-} | {
-  type: 'holders';
-  filterType?: undefined;
-  filterValue?: undefined;
-} | {
-  type: 'epoch-rewards';
-  filterType?: undefined;
-  filterValue?: undefined;
-};
+}

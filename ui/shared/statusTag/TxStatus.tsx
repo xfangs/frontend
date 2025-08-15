@@ -12,10 +12,6 @@ export interface Props {
 }
 
 const TxStatus = ({ status, errorText, isLoading }: Props) => {
-  if (status === undefined) {
-    return null;
-  }
-
   let text;
   let type: StatusTagType;
 
@@ -34,7 +30,7 @@ const TxStatus = ({ status, errorText, isLoading }: Props) => {
       break;
   }
 
-  return <StatusTag type={ type } text={ text } errorText={ errorText } loading={ isLoading }/>;
+  return <StatusTag type={ type } text={ text } errorText={ errorText } isLoading={ isLoading }/>;
 };
 
 export default TxStatus;

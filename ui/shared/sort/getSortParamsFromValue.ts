@@ -1,5 +1,5 @@
 export default function getSortParamsFromValue<SortValue extends string, SortField extends string, SortOrder extends string>(val?: SortValue) {
-  if (!val || val === 'default') {
+  if (!val) {
     return undefined;
   }
 

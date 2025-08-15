@@ -9,24 +9,24 @@ import FormModal from 'ui/shared/FormModal';
 import TransactionForm from './TransactionForm';
 
 type Props = {
-  open: boolean;
-  onOpenChange: ({ open }: { open: boolean }) => void;
+  isOpen: boolean;
+  onClose: () => void;
   onSuccess?: () => Promise<void>;
   data?: Partial<TransactionTag>;
-};
+}
 
-const TransactionModal: React.FC<Props> = ({ open, onOpenChange, onSuccess, data }) => {
+const AddressModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, data }) => {
   const title = data ? 'Edit transaction tag' : 'New transaction tag';
   const text = !data ? 'Label any transaction with a private transaction tag (up to 35 chars) to customize your explorer experience.' : '';
 
   const [ isAlertVisible, setAlertVisible ] = useState(false);
 
   React.useEffect(() => {
-    open && !data?.id && mixpanel.logEvent(
+    isOpen && !data?.id && mixpanel.logEvent(
       mixpanel.EventTypes.PRIVATE_TAG,
       { Action: 'Form opened', 'Page type': PAGE_TYPE_DICT['/account/tag-address'], 'Tag type': 'Tx' },
     );
-  }, [ data?.id, open ]);
+  }, [ data?.id, isOpen ]);
 
   const handleSuccess = React.useCallback(async() => {
     onSuccess?.();
@@ -39,12 +39,12 @@ const TransactionModal: React.FC<Props> = ({ open, onOpenChange, onSuccess, data
   }, [ data?.id, onSuccess ]);
 
   const renderForm = useCallback(() => {
-    return <TransactionForm data={ data } onOpenChange={ onOpenChange } onSuccess={ handleSuccess } setAlertVisible={ setAlertVisible }/>;
-  }, [ data, handleSuccess, onOpenChange ]);
+    return <TransactionForm data={ data } onClose={ onClose } onSuccess={ handleSuccess } setAlertVisible={ setAlertVisible }/>;
+  }, [ data, handleSuccess, onClose ]);
   return (
     <FormModal<TransactionTag>
-      open={ open }
-      onOpenChange={ onOpenChange }
+      isOpen={ isOpen }
+      onClose={ onClose }
       title={ title }
       text={ text }
       renderForm={ renderForm }
@@ -54,4 +54,4 @@ const TransactionModal: React.FC<Props> = ({ open, onOpenChange, onSuccess, data
   );
 };
 
-export default TransactionModal;
+export default AddressModal;

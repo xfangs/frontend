@@ -3,14 +3,11 @@ import type CspDev from 'csp-dev';
 import config from 'configs/app';
 
 export function googleReCaptcha(): CspDev.DirectiveDescriptor {
-  if (!config.services.reCaptchaV2.siteKey) {
+  if (!config.services.reCaptcha.siteKey) {
     return {};
   }
 
   return {
-    'connect-src': [
-      'https://www.google.com/recaptcha/api2/clr',
-    ],
     'script-src': [
       'https://www.google.com/recaptcha/api.js',
       'https://www.gstatic.com',

@@ -1,16 +1,14 @@
-import type { HTMLChakraProps } from '@chakra-ui/react';
-import { chakra, Center } from '@chakra-ui/react';
-import { throttle } from 'es-toolkit';
+import { InputGroup, Input, InputLeftElement, chakra, useColorModeValue, forwardRef, InputRightElement } from '@chakra-ui/react';
+import throttle from 'lodash/throttle';
 import React from 'react';
 import type { ChangeEvent, FormEvent, FocusEvent } from 'react';
 
 import { useScrollDirection } from 'lib/contexts/scrollDirection';
 import useIsMobile from 'lib/hooks/useIsMobile';
-import { Input } from 'toolkit/chakra/input';
-import { InputGroup } from 'toolkit/chakra/input-group';
-import { ClearButton } from 'toolkit/components/buttons/ClearButton';
+import ClearButton from 'ui/shared/ClearButton';
 import IconSvg from 'ui/shared/IconSvg';
-interface Props extends Omit<HTMLChakraProps<'form'>, 'onChange'> {
+
+interface Props {
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onBlur?: (event: FocusEvent<HTMLFormElement>) => void;
@@ -18,14 +16,10 @@ interface Props extends Omit<HTMLChakraProps<'form'>, 'onChange'> {
   onHide?: () => void;
   onClear: () => void;
   isHomepage?: boolean;
-  isSuggestOpen?: boolean;
   value: string;
 }
 
-const SearchBarInput = (
-  { onChange, onSubmit, isHomepage, isSuggestOpen, onFocus, onBlur, onHide, onClear, value, ...rest }: Props,
-  ref: React.ForwardedRef<HTMLFormElement>,
-) => {
+const SearchBarInput = ({ onChange, onSubmit, isHomepage, onFocus, onBlur, onHide, onClear, value }: Props, ref: React.ForwardedRef<HTMLFormElement>) => {
   const innerRef = React.useRef<HTMLFormElement>(null);
   React.useImperativeHandle(ref, () => innerRef.current as HTMLFormElement, []);
   const [ isSticky, setIsSticky ] = React.useState(false);
@@ -64,68 +58,8 @@ const SearchBarInput = (
     };
   }, [ isMobile, handleScroll ]);
 
-  const handleKeyPress = React.useCallback((event: KeyboardEvent) => {
-    if (isMobile) {
-      return;
-    }
-
-    switch (event.key) {
-      case '/': {
-        if ([ 'INPUT', 'TEXTAREA' ].includes((event.target as HTMLElement).tagName)) {
-          break;
-        }
-
-        if (!isSuggestOpen) {
-          event.preventDefault();
-          innerRef.current?.querySelector('input')?.focus();
-          onFocus?.();
-        }
-        break;
-      }
-      case 'Escape': {
-        if (isSuggestOpen) {
-          innerRef.current?.querySelector('input')?.blur();
-          onHide?.();
-        }
-        break;
-      }
-    }
-  }, [ isMobile, isSuggestOpen, onFocus, onHide ]);
-
-  React.useEffect(() => {
-    window.addEventListener('keydown', handleKeyPress);
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [ handleKeyPress ]);
-
+  const bgColor = useColorModeValue('white', 'black');
   const transformMobile = scrollDirection !== 'down' ? 'translateY(0)' : 'translateY(-100%)';
-
-  const startElement = (
-    <IconSvg
-      name="search"
-      boxSize={ 5 }
-      mx={ 2 }
-    />
-  );
-
-  const endElement = (
-    <>
-      <ClearButton onClick={ onClear } visible={ value.length > 0 } mx={ 2 }/>
-      { !isMobile && (
-        <Center
-          boxSize="20px"
-          mr={ 2 }
-          borderRadius="sm"
-          borderWidth="1px"
-          borderColor="gray.500"
-          color="gray.500"
-        >
-          /
-        </Center>
-      ) }
-    </>
-  );
 
   return (
     <chakra.form
@@ -133,42 +67,54 @@ const SearchBarInput = (
       noValidate
       onSubmit={ onSubmit }
       onBlur={ onBlur }
+      onFocus={ onFocus }
       w="100%"
-      backgroundColor={{ _light: 'white', _dark: 'black' }}
+      backgroundColor={ bgColor }
       borderRadius={{ base: isHomepage ? 'base' : 'none', lg: 'base' }}
-      position={{ base: isHomepage ? 'static' : 'absolute', lg: 'relative' }}
+      position={{ base: isHomepage ? 'static' : 'absolute', lg: 'static' }}
       top={{ base: isHomepage ? 0 : 55, lg: 0 }}
       left="0"
-      zIndex={{ base: isHomepage ? 'auto' : '0', lg: isSuggestOpen ? 'modal' : 'auto' }}
-      paddingX={{ base: isHomepage ? 0 : 3, lg: 0 }}
+      zIndex={{ base: isHomepage ? 'auto' : '-1', lg: 'auto' }}
+      paddingX={{ base: isHomepage ? 0 : 4, lg: 0 }}
       paddingTop={{ base: isHomepage ? 0 : 1, lg: 0 }}
-      paddingBottom={{ base: isHomepage ? 0 : 2, lg: 0 }}
+      paddingBottom={{ base: isHomepage ? 0 : 4, lg: 0 }}
       boxShadow={ scrollDirection !== 'down' && isSticky ? 'md' : 'none' }
       transform={{ base: isHomepage ? 'none' : transformMobile, lg: 'none' }}
       transitionProperty="transform,box-shadow,background-color,color,border-color"
       transitionDuration="normal"
       transitionTimingFunction="ease"
-      { ...rest }
     >
-      <InputGroup
-        startElement={ startElement }
-        endElement={ endElement }
-      >
+      <InputGroup size={{ base: isHomepage ? 'md' : 'sm', lg: 'md' }}>
+        <InputLeftElement w={{ base: isHomepage ? 6 : 4, lg: 6 }} ml={{ base: isHomepage ? 4 : 3, lg: 4 }} h="100%">
+          <IconSvg name="search" boxSize={{ base: isHomepage ? 6 : 4, lg: 6 }} color={ useColorModeValue('blackAlpha.600', 'whiteAlpha.600') }/>
+        </InputLeftElement>
         <Input
-          size="md"
+          pl={{ base: isHomepage ? '50px' : '38px', lg: '50px' }}
+          sx={{
+            '@media screen and (max-width: 999px)': {
+              paddingLeft: isHomepage ? '50px' : '38px',
+              paddingRight: '36px',
+            },
+            '@media screen and (min-width: 1001px)': {
+              paddingRight: '36px',
+            },
+          }}
           placeholder={ isMobile ? 'Search by address / ... ' : 'Search by address / txn hash / block / token... ' }
-          value={ value }
           onChange={ handleChange }
-          onFocus={ onFocus }
           border={ isHomepage ? 'none' : '2px solid' }
-          borderColor={{ _light: 'blackAlpha.100', _dark: 'whiteAlpha.200' }}
-          color={{ _light: 'black', _dark: 'white' }}
-          _hover={{ borderColor: 'input.border.hover' }}
-          _focusWithin={{ _placeholder: { color: 'gray.300' }, borderColor: 'input.border.focus', _hover: { borderColor: 'input.border.focus' } }}
+          borderColor={ useColorModeValue('blackAlpha.100', 'whiteAlpha.200') }
+          _focusWithin={{ _placeholder: { color: 'gray.300' } }}
+          color={ useColorModeValue('black', 'white') }
+          value={ value }
         />
+        { value && (
+          <InputRightElement top={{ base: isHomepage ? '18px' : 2, lg: '18px' }} right={ 2 }>
+            <ClearButton onClick={ onClear }/>
+          </InputRightElement>
+        ) }
       </InputGroup>
     </chakra.form>
   );
 };
 
-export default React.memo(React.forwardRef(SearchBarInput));
+export default React.memo(forwardRef(SearchBarInput));

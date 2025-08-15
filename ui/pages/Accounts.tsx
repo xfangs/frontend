@@ -1,23 +1,24 @@
-import { Box } from '@chakra-ui/react';
+import { Hide, Show } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
 import React from 'react';
 
-import getItemIndex from 'lib/getItemIndex';
 import { TOP_ADDRESS } from 'stubs/address';
 import { generateListStub } from 'stubs/utils';
 import AddressesListItem from 'ui/addresses/AddressesListItem';
 import AddressesTable from 'ui/addresses/AddressesTable';
-import ActionBar, { ACTION_BAR_HEIGHT_DESKTOP } from 'ui/shared/ActionBar';
+import ActionBar from 'ui/shared/ActionBar';
 import DataListDisplay from 'ui/shared/DataListDisplay';
 import PageTitle from 'ui/shared/Page/PageTitle';
 import Pagination from 'ui/shared/pagination/Pagination';
 import useQueryWithPages from 'ui/shared/pagination/useQueryWithPages';
 
+const PAGE_SIZE = 50;
+
 const Accounts = () => {
   const { isError, isPlaceholderData, data, pagination } = useQueryWithPages({
-    resourceName: 'general:addresses',
+    resourceName: 'addresses',
     options: {
-      placeholderData: generateListStub<'general:addresses'>(
+      placeholderData: generateListStub<'addresses'>(
         TOP_ADDRESS,
         50,
         {
@@ -38,23 +39,23 @@ const Accounts = () => {
     </ActionBar>
   );
 
-  const pageStartIndex = getItemIndex(0, pagination.page);
+  const pageStartIndex = (pagination.page - 1) * PAGE_SIZE + 1;
   const totalSupply = React.useMemo(() => {
     return BigNumber(data?.total_supply || '0');
   }, [ data?.total_supply ]);
 
   const content = data?.items ? (
     <>
-      <Box hideBelow="lg">
+      <Hide below="lg" ssr={ false }>
         <AddressesTable
-          top={ pagination.isVisible ? ACTION_BAR_HEIGHT_DESKTOP : 0 }
+          top={ pagination.isVisible ? 80 : 0 }
           items={ data.items }
           totalSupply={ totalSupply }
           pageStartIndex={ pageStartIndex }
           isLoading={ isPlaceholderData }
         />
-      </Box>
-      <Box hideFrom="lg">
+      </Hide>
+      <Show below="lg" ssr={ false }>
         { data.items.map((item, index) => {
           return (
             <AddressesListItem
@@ -66,7 +67,7 @@ const Accounts = () => {
             />
           );
         }) }
-      </Box>
+      </Show>
     </>
   ) : null;
 
@@ -75,12 +76,11 @@ const Accounts = () => {
       <PageTitle title="Top accounts" withTextAd/>
       <DataListDisplay
         isError={ isError }
-        itemsNum={ data?.items.length }
+        items={ data?.items }
         emptyText="There are no accounts."
+        content={ content }
         actionBar={ actionBar }
-      >
-        { content }
-      </DataListDisplay>
+      />
     </>
   );
 };

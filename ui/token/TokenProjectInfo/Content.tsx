@@ -14,7 +14,7 @@ interface Props {
 
 const SOCIAL_LINKS: Array<Omit<ServiceLinkProps, 'href'>> = [
   { field: 'github', icon: 'social/github_filled', title: 'Github' },
-  { field: 'twitter', icon: 'social/twitter_filled', title: 'X (ex-Twitter)' },
+  { field: 'twitter', icon: 'social/twitter_filled', title: 'Twitter' },
   { field: 'telegram', icon: 'social/telegram_filled', title: 'Telegram' },
   { field: 'openSea', icon: 'social/opensea_filled', title: 'OpenSea' },
   { field: 'linkedin', icon: 'social/linkedin_filled', title: 'LinkedIn' },
@@ -59,7 +59,7 @@ const Content = ({ data }: Props) => {
     <Flex fontSize="sm" flexDir="column" rowGap={ 5 }>
       { (description || docs || support) && (
         <div>
-          <Text color="text.secondary" fontSize="xs">Description and support info</Text>
+          <Text variant="secondary" fontSize="xs">Description and support info</Text>
           { description }
           { (docs || support) && (
             <Flex alignItems="center" flexWrap="wrap" columnGap={ 6 } mt={ 3 }>
@@ -71,7 +71,7 @@ const Content = ({ data }: Props) => {
       ) }
       { socialLinks.length > 0 && (
         <div>
-          <Text color="text.secondary" fontSize="xs">Links</Text>
+          <Text variant="secondary" fontSize="xs">Links</Text>
           <Grid templateColumns={{ base: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} columnGap={ 4 } rowGap={ 3 } mt={ 3 }>
             { socialLinks.map((link) => <ServiceLink key={ link.field } { ...link }/>) }
           </Grid>
@@ -79,7 +79,7 @@ const Content = ({ data }: Props) => {
       ) }
       { priceTickersLinks.length > 0 && (
         <div>
-          <Text color="text.secondary" fontSize="xs">Crypto markets</Text>
+          <Text variant="secondary" fontSize="xs">Crypto markets</Text>
           <Grid templateColumns={{ base: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} columnGap={ 4 } rowGap={ 3 } mt={ 3 }>
             { priceTickersLinks.map((link) => <ServiceLink key={ link.field } { ...link }/>) }
           </Grid>

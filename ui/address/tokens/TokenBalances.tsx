@@ -4,12 +4,9 @@ import React from 'react';
 
 import config from 'configs/app';
 import useApiQuery from 'lib/api/useApiQuery';
+import { ZERO } from 'lib/consts';
 import getCurrencyValue from 'lib/getCurrencyValue';
-import { currencyUnits } from 'lib/units';
-import { ZERO } from 'toolkit/utils/consts';
 import DataFetchAlert from 'ui/shared/DataFetchAlert';
-import IconSvg from 'ui/shared/IconSvg';
-import NativeTokenIcon from 'ui/shared/NativeTokenIcon';
 
 import { getTokensTotalInfo } from '../utils/tokenUtils';
 import useFetchTokens from '../utils/useFetchTokens';
@@ -20,7 +17,7 @@ const TokenBalances = () => {
 
   const hash = router.query.hash?.toString();
 
-  const addressQuery = useApiQuery('general:address', {
+  const addressQuery = useApiQuery('address', {
     pathParams: { hash },
     queryOptions: { enabled: Boolean(hash), refetchOnMount: false },
   });
@@ -44,30 +41,28 @@ const TokenBalances = () => {
   const prefix = tokensInfo.isOverflow ? '>' : '';
   const totalUsd = nativeUsd.plus(tokensInfo.usd);
   const tokensNumText = tokensInfo.num > 0 ?
-    `${ prefix }${ tokensInfo.num } ${ tokensInfo.num > 1 ? 'tokens' : 'token' }` :
-    '0';
+    ` | ${ prefix }${ tokensInfo.num } ${ tokensInfo.num > 1 ? 'tokens' : 'token' }` :
+    '';
 
   return (
     <Flex columnGap={ 3 } rowGap={ 3 } mt={{ base: '6px', lg: 0 }} flexDirection={{ base: 'column', lg: 'row' }}>
       <TokenBalancesItem
         name="Net Worth"
-        value={ addressData?.exchange_rate ? `${ prefix }$${ totalUsd.toFormat(2) }` : 'N/A' }
+        value={ addressData?.exchange_rate ? `${ prefix }$${ totalUsd.toFormat(2) } USD` : 'N/A' }
         isLoading={ addressQuery.isPending || tokenQuery.isPending }
-        icon={ <IconSvg name="wallet" boxSize="20px" flexShrink={ 0 } color="text.secondary"/> }
       />
       <TokenBalancesItem
-        name={ `${ currencyUnits.ether } Balance` }
-        value={ `${ nativeValue } ${ currencyUnits.ether }` }
-        valueSecondary={ !nativeUsd.eq(ZERO) ? `$${ nativeUsd.toFormat(2) }` : '' }
+        name={ `${ config.chain.currency.symbol } Balance` }
+        value={ (!nativeUsd.eq(ZERO) ? `$${ nativeUsd.toFormat(2) } USD | ` : '') + `${ nativeValue } ${ config.chain.currency.symbol }` }
         isLoading={ addressQuery.isPending || tokenQuery.isPending }
-        icon={ <NativeTokenIcon boxSize="20px"/> }
       />
       <TokenBalancesItem
         name="Tokens"
-        value={ tokensNumText }
-        valueSecondary={ `${ prefix }$${ tokensInfo.usd.toFormat(2) }` }
+        value={
+          `${ prefix }$${ tokensInfo.usd.toFormat(2) } USD ` +
+          tokensNumText
+        }
         isLoading={ addressQuery.isPending || tokenQuery.isPending }
-        icon={ <IconSvg name="tokens" boxSize="20px" flexShrink={ 0 } color="text.secondary"/> }
       />
     </Flex>
   );

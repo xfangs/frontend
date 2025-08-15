@@ -1,20 +1,15 @@
 import { chakra } from '@chakra-ui/react';
+import _omit from 'lodash/omit';
 import React from 'react';
 
-import { route } from 'nextjs/routes';
+import { route } from 'nextjs-routes';
 
-import { useMultichainContext } from 'lib/contexts/multichain';
 import * as EntityBase from 'ui/shared/entities/base/components';
-
-import { distributeEntityProps } from '../base/utils';
 
 type LinkProps = EntityBase.LinkBaseProps & Pick<EntityProps, 'hash'>;
 
 const Link = chakra((props: LinkProps) => {
-  const defaultHref = route(
-    { pathname: '/tx/[hash]', query: { hash: props.hash } },
-    props.chain ? { chain: props.chain } : undefined,
-  );
+  const defaultHref = route({ pathname: '/tx/[hash]', query: { hash: props.hash } });
 
   return (
     <EntityBase.Link
@@ -26,15 +21,15 @@ const Link = chakra((props: LinkProps) => {
   );
 });
 
-const Icon = (props: EntityBase.IconBaseProps) => {
+type IconProps = Omit<EntityBase.IconBaseProps, 'name'> & {
+  name?: EntityBase.IconBaseProps['name'];
+};
+
+const Icon = (props: IconProps) => {
   return (
     <EntityBase.Icon
       { ...props }
       name={ props.name ?? 'transactions_slim' }
-      shield={ props.shield ?? (props.chain ? {
-        src: props.chain.config.UI.navigation.icon.default,
-      } : undefined) }
-      hint={ props.chain ? `Transaction on ${ props.chain.config.chain.name } (Chain ID: ${ props.chain.config.chain.id })` : undefined }
     />
   );
 };
@@ -71,17 +66,16 @@ export interface EntityProps extends EntityBase.EntityBaseProps {
 }
 
 const TxEntity = (props: EntityProps) => {
-  const multichainContext = useMultichainContext();
-  const partsProps = distributeEntityProps(props);
-
-  const chain = props.chain ?? multichainContext?.chain;
-  const content = <Content { ...partsProps.content }/>;
+  const linkProps = _omit(props, [ 'className' ]);
+  const partsProps = _omit(props, [ 'className', 'onClick' ]);
 
   return (
-    <Container { ...partsProps.container }>
-      <Icon { ...partsProps.icon }/>
-      { props.noLink ? content : <Link { ...partsProps.link } chain={ chain }>{ content }</Link> }
-      <Copy { ...partsProps.copy }/>
+    <Container className={ props.className }>
+      <Icon { ...partsProps }/>
+      <Link { ...linkProps }>
+        <Content { ...partsProps }/>
+      </Link>
+      <Copy { ...partsProps }/>
     </Container>
   );
 };

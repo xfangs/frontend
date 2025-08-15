@@ -7,7 +7,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 
-import { nbsp } from 'toolkit/utils/htmlEntities';
+import { nbsp } from 'lib/html-entities';
 
 const relativeTimeConfig = {
   thresholds: [
@@ -38,7 +38,6 @@ dayjs.extend(minMax);
 dayjs.updateLocale('en', {
   formats: {
     llll: `MMM DD YYYY HH:mm:ss A (Z${ nbsp }UTC)`,
-    lll: 'MMM D, YYYY h:mm A',
   },
   relativeTime: {
     s: '1s',

@@ -1,16 +1,19 @@
-import type { BrowserContext } from '@playwright/test';
+import { test as base, expect, devices } from '@playwright/experimental-ct-react';
 import React from 'react';
 
-import { FEATURED_NETWORKS } from 'mocks/config/network';
-import { contextWithAuth } from 'playwright/fixtures/auth';
-import { test, expect, devices } from 'playwright/lib';
+import { buildExternalAssetFilePath } from 'configs/app/utils';
+import { FEATURED_NETWORKS_MOCK } from 'mocks/config/network';
+import authFixture from 'playwright/fixtures/auth';
+import contextWithEnvs, { createContextWithEnvs } from 'playwright/fixtures/contextWithEnvs';
+import TestApp from 'playwright/TestApp';
+import * as app from 'playwright/utils/app';
 
 import Burger from './Burger';
 
-const FEATURED_NETWORKS_URL = 'https://localhost:3000/featured-networks.json';
+const FEATURED_NETWORKS_URL = app.url + buildExternalAssetFilePath('NEXT_PUBLIC_FEATURED_NETWORKS', 'https://localhost:3000/featured-networks.json') || '';
 const LOGO_URL = 'https://localhost:3000/my-logo.png';
 
-test.use({ viewport: devices['iPhone 13 Pro'].viewport });
+base.use({ viewport: devices['iPhone 13 Pro'].viewport });
 
 const hooksConfig = {
   router: {
@@ -20,59 +23,106 @@ const hooksConfig = {
   },
 };
 
-test.beforeEach(async({ mockEnvs, mockConfigResponse, mockAssetResponse }) => {
-  await mockEnvs([
-    [ 'NEXT_PUBLIC_FEATURED_NETWORKS', FEATURED_NETWORKS_URL ],
-  ]);
-  await mockConfigResponse('NEXT_PUBLIC_FEATURED_NETWORKS', FEATURED_NETWORKS_URL, FEATURED_NETWORKS);
-  await mockAssetResponse(LOGO_URL, './playwright/mocks/image_s.jpg');
+const test = base.extend({
+  context: contextWithEnvs([
+    { name: 'NEXT_PUBLIC_FEATURED_NETWORKS', value: FEATURED_NETWORKS_URL },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ]) as any,
 });
 
-test('base view', async({ render, page }) => {
-  const component = await render(<Burger/>, { hooksConfig });
+test('base view', async({ mount, page }) => {
+  await page.route(FEATURED_NETWORKS_URL, (route) => {
+    return route.fulfill({
+      body: FEATURED_NETWORKS_MOCK,
+    });
+  });
+  await page.route(LOGO_URL, (route) => {
+    return route.fulfill({
+      status: 200,
+      path: './playwright/mocks/image_s.jpg',
+    });
+  });
 
-  await component.getByRole('button', { name: 'Menu button' }).click();
-  await expect(page).toHaveScreenshot();
+  const component = await mount(
+    <TestApp>
+      <Burger/>
+    </TestApp>,
+    { hooksConfig },
+  );
 
-  await page.getByRole('button', { name: 'Network menu' }).click();
-  await page.mouse.move(0, 0);
+  await component.locator('div[aria-label="Menu button"]').click();
+  await expect(page.locator('.chakra-modal__content-container')).toHaveScreenshot();
+
+  await page.locator('button[aria-label="Network menu"]').click();
   await expect(page).toHaveScreenshot();
 });
 
 test.describe('dark mode', () => {
   test.use({ colorScheme: 'dark' });
 
-  test('base view', async({ render, page }) => {
-    const component = await render(<Burger/>, { hooksConfig });
+  test('base view', async({ mount, page }) => {
+    await page.route(FEATURED_NETWORKS_URL, (route) => {
+      return route.fulfill({
+        body: FEATURED_NETWORKS_MOCK,
+      });
+    });
+    await page.route(LOGO_URL, (route) => {
+      return route.fulfill({
+        status: 200,
+        path: './playwright/mocks/image_s.jpg',
+      });
+    });
 
-    await component.getByRole('button', { name: 'Menu button' }).click();
+    const component = await mount(
+      <TestApp>
+        <Burger/>
+      </TestApp>,
+      { hooksConfig },
+    );
+
+    await component.locator('div[aria-label="Menu button"]').click();
     await expect(page).toHaveScreenshot();
 
-    await page.getByRole('button', { name: 'Network menu' }).click();
-    await page.mouse.move(0, 0);
+    await page.locator('button[aria-label="Network menu"]').click();
     await expect(page).toHaveScreenshot();
   });
 });
 
-test('submenu', async({ render, page }) => {
-  const component = await render(<Burger/>, { hooksConfig });
+test('submenu', async({ mount, page }) => {
+  const component = await mount(
+    <TestApp>
+      <Burger/>
+    </TestApp>,
+    { hooksConfig },
+  );
 
-  await component.getByRole('button', { name: 'Menu button' }).click();
+  await component.locator('div[aria-label="Menu button"]').click();
   await page.locator('div[aria-label="Blockchain link group"]').click();
   await expect(page).toHaveScreenshot();
 });
 
-const authTest = test.extend<{ context: BrowserContext }>({
-  context: contextWithAuth,
-});
+test.describe('auth', () => {
+  const extendedTest = base.extend({
+    context: async({ browser }, use) => {
+      const context = await createContextWithEnvs(browser, [
+        { name: 'NEXT_PUBLIC_FEATURED_NETWORKS', value: FEATURED_NETWORKS_URL },
+      ]);
+      authFixture(context);
+      use(context);
+    },
+  });
 
-authTest.describe('auth', () => {
-  authTest.use({ viewport: { width: devices['iPhone 13 Pro'].viewport.width, height: 800 } });
+  extendedTest.use({ viewport: { width: devices['iPhone 13 Pro'].viewport.width, height: 800 } });
 
-  authTest('base view', async({ render, page }) => {
-    const component = await render(<Burger/>, { hooksConfig });
+  extendedTest('base view', async({ mount, page }) => {
+    const component = await mount(
+      <TestApp>
+        <Burger/>
+      </TestApp>,
+      { hooksConfig },
+    );
 
-    await component.getByRole('button', { name: 'Menu button' }).click();
+    await component.locator('div[aria-label="Menu button"]').click();
     await expect(page).toHaveScreenshot();
   });
 });

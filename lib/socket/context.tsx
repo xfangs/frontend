@@ -1,14 +1,9 @@
 // https://hexdocs.pm/phoenix/js/
-import type { Channel, SocketConnectOption } from 'phoenix';
+import type { SocketConnectOption } from 'phoenix';
 import { Socket } from 'phoenix';
 import React, { useEffect, useState } from 'react';
 
-type ChannelRegistry = Record<string, { channel: Channel; subscribers: number }>;
-
-export const SocketContext = React.createContext<{
-  socket: Socket | null;
-  channelRegistry: React.MutableRefObject<ChannelRegistry>;
-} | null>(null);
+export const SocketContext = React.createContext<Socket | null>(null);
 
 interface SocketProviderProps {
   children: React.ReactNode;
@@ -18,7 +13,6 @@ interface SocketProviderProps {
 
 export function SocketProvider({ children, options, url }: SocketProviderProps) {
   const [ socket, setSocket ] = useState<Socket | null>(null);
-  const channelRegistry = React.useRef<ChannelRegistry>({});
 
   useEffect(() => {
     if (!url) {
@@ -35,13 +29,8 @@ export function SocketProvider({ children, options, url }: SocketProviderProps) 
     };
   }, [ options, url ]);
 
-  const value = React.useMemo(() => ({
-    socket,
-    channelRegistry,
-  }), [ socket, channelRegistry ]);
-
   return (
-    <SocketContext.Provider value={ value }>
+    <SocketContext.Provider value={ socket }>
       { children }
     </SocketContext.Provider>
   );

@@ -1,4 +1,4 @@
-import * as regexp from 'toolkit/utils/regexp';
+import * as regexp from 'lib/regexp';
 
 export default function urlParser(maybeUrl: string): URL | undefined {
   try {

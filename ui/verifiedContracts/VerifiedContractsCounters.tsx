@@ -1,64 +1,48 @@
-import { Box } from '@chakra-ui/react';
+import { Flex, Skeleton } from '@chakra-ui/react';
 import React from 'react';
 
-import config from 'configs/app';
 import useApiQuery from 'lib/api/useApiQuery';
-import { VERIFIED_CONTRACTS_COUNTERS, VERIFIED_CONTRACTS_COUNTERS_MICROSERVICE } from 'stubs/contract';
-import StatsWidget from 'ui/shared/stats/StatsWidget';
 
-const isStatsFeatureEnabled = config.features.stats.isEnabled;
+import VerifiedContractsCountersItem from './VerifiedContractsCountersItem';
 
 const VerifiedContractsCounters = () => {
-  const countersStatsQuery = useApiQuery('stats:pages_contracts', {
-    queryOptions: {
-      enabled: isStatsFeatureEnabled,
-      placeholderData: isStatsFeatureEnabled ? VERIFIED_CONTRACTS_COUNTERS_MICROSERVICE : undefined,
-    },
-  });
+  const countersQuery = useApiQuery('verified_contracts_counters');
 
-  const countersApiQuery = useApiQuery('general:verified_contracts_counters', {
-    queryOptions: {
-      enabled: !isStatsFeatureEnabled,
-      placeholderData: !isStatsFeatureEnabled ? VERIFIED_CONTRACTS_COUNTERS : undefined,
-    },
-  });
-
-  if (!(isStatsFeatureEnabled ? countersStatsQuery.data : countersApiQuery.data)) {
+  if (countersQuery.isError) {
     return null;
   }
 
-  const isLoading = isStatsFeatureEnabled ? countersStatsQuery.isPlaceholderData : countersApiQuery.isPlaceholderData;
+  const content = (() => {
+    if (countersQuery.isPending) {
+      const item = <Skeleton w={{ base: '100%', lg: 'calc((100% - 12px)/2)' }} h="69px" borderRadius="12px"/>;
+      return (
+        <>
+          { item }
+          { item }
+        </>
+      );
+    }
 
-  const contractsCount = isStatsFeatureEnabled ? countersStatsQuery.data?.total_contracts?.value : countersApiQuery.data?.smart_contracts;
-  const newContractsCount = isStatsFeatureEnabled ? countersStatsQuery.data?.new_contracts_24h?.value : countersApiQuery.data?.new_smart_contracts_24h;
-
-  const verifiedContractsCount = isStatsFeatureEnabled ?
-    countersStatsQuery.data?.total_verified_contracts?.value :
-    countersApiQuery.data?.verified_smart_contracts;
-  const newVerifiedContractsCount = isStatsFeatureEnabled ?
-    countersStatsQuery.data?.new_verified_contracts_24h?.value :
-    countersApiQuery.data?.new_verified_smart_contracts_24h;
+    return (
+      <>
+        <VerifiedContractsCountersItem
+          name="Total contracts"
+          total={ countersQuery.data.smart_contracts }
+          new24={ countersQuery.data.new_smart_contracts_24h }
+        />
+        <VerifiedContractsCountersItem
+          name="Verified contracts"
+          total={ countersQuery.data.verified_smart_contracts }
+          new24={ countersQuery.data.new_verified_smart_contracts_24h }
+        />
+      </>
+    );
+  })();
 
   return (
-    <Box columnGap={ 3 } rowGap={ 3 } mb={ 6 } display="grid" gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}>
-      <StatsWidget
-        label="Total contracts"
-        value={ Number(contractsCount).toLocaleString() }
-        diff={ newContractsCount }
-        diffFormatted={ Number(newContractsCount).toLocaleString() }
-        isLoading={ isLoading }
-        // there is no stats for contracts growth for now
-        // href={ config.features.stats.isEnabled ? { pathname: '/stats/[id]', query: { id: 'contractsGrowth' } } : undefined }
-      />
-      <StatsWidget
-        label="Verified contracts"
-        value={ Number(verifiedContractsCount).toLocaleString() }
-        diff={ newVerifiedContractsCount }
-        diffFormatted={ Number(newVerifiedContractsCount).toLocaleString() }
-        isLoading={ isLoading }
-        href={ config.features.stats.isEnabled ? { pathname: '/stats/[id]', query: { id: 'verifiedContractsGrowth' } } : undefined }
-      />
-    </Box>
+    <Flex columnGap={ 3 } rowGap={ 3 } flexDirection={{ base: 'column', lg: 'row' }} mb={ 6 }>
+      { content }
+    </Flex>
   );
 };
 

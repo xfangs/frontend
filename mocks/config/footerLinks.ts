@@ -79,10 +79,6 @@ export const FOOTER_LINKS: Array<CustomLinksGroup> = [
       {
         text: 'MetaDock',
         url: 'https://blocksec.com/metadock',
-        iconUrl: [
-          'http://localhost:3000/mocks/image_s.jpg',
-          'http://localhost:3000/mocks/image_svg.svg',
-        ],
       },
       {
         text: 'Sourcify',

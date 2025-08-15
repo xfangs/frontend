@@ -5,41 +5,34 @@ import React from 'react';
 import type { SocketMessage } from 'lib/socket/types';
 import type { BlockType, BlocksResponse } from 'types/api/block';
 
-import { route } from 'nextjs-routes';
-
 import { getResourceKey } from 'lib/api/useApiQuery';
 import useIsMobile from 'lib/hooks/useIsMobile';
 import useSocketChannel from 'lib/socket/useSocketChannel';
 import useSocketMessage from 'lib/socket/useSocketMessage';
-import { Link } from 'toolkit/chakra/link';
 import BlocksList from 'ui/blocks/BlocksList';
 import BlocksTable from 'ui/blocks/BlocksTable';
 import ActionBar from 'ui/shared/ActionBar';
 import DataListDisplay from 'ui/shared/DataListDisplay';
-import IconSvg from 'ui/shared/IconSvg';
 import Pagination from 'ui/shared/pagination/Pagination';
 import type { QueryWithPagesResult } from 'ui/shared/pagination/useQueryWithPages';
 import * as SocketNewItemsNotice from 'ui/shared/SocketNewItemsNotice';
 
 const OVERLOAD_COUNT = 75;
-const TABS_HEIGHT = 88;
 
 interface Props {
   type?: BlockType;
-  query: QueryWithPagesResult<'general:blocks'> | QueryWithPagesResult<'general:optimistic_l2_txn_batch_blocks'>;
-  enableSocket?: boolean;
-  top?: number;
+  query: QueryWithPagesResult<'blocks'>;
 }
 
-const BlocksContent = ({ type, query, enableSocket = true, top }: Props) => {
+const BlocksContent = ({ type, query }: Props) => {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  const [ showSocketAlert, setShowSocketAlert ] = React.useState(false);
+  const [ socketAlert, setSocketAlert ] = React.useState('');
 
   const [ newItemsCount, setNewItemsCount ] = React.useState(0);
 
   const handleNewBlockMessage: SocketMessage.NewBlock['handler'] = React.useCallback((payload) => {
-    const queryKey = getResourceKey('general:blocks', { queryParams: { type } });
+    const queryKey = getResourceKey('blocks', { queryParams: { type } });
 
     queryClient.setQueryData(queryKey, (prevData: BlocksResponse | undefined) => {
       const shouldAddToList = !type || type === payload.block.type;
@@ -66,18 +59,18 @@ const BlocksContent = ({ type, query, enableSocket = true, top }: Props) => {
   }, [ queryClient, type ]);
 
   const handleSocketClose = React.useCallback(() => {
-    setShowSocketAlert(true);
+    setSocketAlert('Connection is lost. Please refresh the page to load new blocks.');
   }, []);
 
   const handleSocketError = React.useCallback(() => {
-    setShowSocketAlert(true);
+    setSocketAlert('An error has occurred while fetching new blocks. Please refresh the page to load new blocks.');
   }, []);
 
   const channel = useSocketChannel({
     topic: 'blocks:new_block',
     onSocketClose: handleSocketClose,
     onSocketError: handleSocketError,
-    isDisabled: query.isPlaceholderData || query.isError || query.pagination.page !== 1 || !enableSocket,
+    isDisabled: query.isPlaceholderData || query.isError || query.pagination.page !== 1,
   });
   useSocketMessage({
     channel,
@@ -87,37 +80,34 @@ const BlocksContent = ({ type, query, enableSocket = true, top }: Props) => {
 
   const content = query.data?.items ? (
     <>
-      <Box hideFrom="lg">
-        { query.pagination.page === 1 && enableSocket && (
+      <Box display={{ base: 'block', lg: 'none' }}>
+        { query.pagination.page === 1 && (
           <SocketNewItemsNotice.Mobile
+            url={ window.location.href }
             num={ newItemsCount }
-            showErrorAlert={ showSocketAlert }
+            alert={ socketAlert }
             type="block"
             isLoading={ query.isPlaceholderData }
           />
         ) }
         <BlocksList data={ query.data.items } isLoading={ query.isPlaceholderData } page={ query.pagination.page }/>
       </Box>
-      <Box hideBelow="lg">
+      <Box display={{ base: 'none', lg: 'block' }}>
         <BlocksTable
           data={ query.data.items }
-          top={ top || (query.pagination.isVisible ? TABS_HEIGHT : 0) }
+          top={ query.pagination.isVisible ? 80 : 0 }
           page={ query.pagination.page }
           isLoading={ query.isPlaceholderData }
-          showSocketInfo={ query.pagination.page === 1 && enableSocket }
+          showSocketInfo={ query.pagination.page === 1 }
           socketInfoNum={ newItemsCount }
-          showSocketErrorAlert={ showSocketAlert }
+          socketInfoAlert={ socketAlert }
         />
       </Box>
     </>
   ) : null;
 
-  const actionBar = isMobile ? (
+  const actionBar = isMobile && query.pagination.isVisible ? (
     <ActionBar mt={ -6 }>
-      <Link href={ route({ pathname: '/block/countdown' }) }>
-        <IconSvg name="hourglass_slim" boxSize={ 5 } mr={ 2 }/>
-        <span>Block countdown</span>
-      </Link>
       <Pagination ml="auto" { ...query.pagination }/>
     </ActionBar>
   ) : null;
@@ -125,12 +115,11 @@ const BlocksContent = ({ type, query, enableSocket = true, top }: Props) => {
   return (
     <DataListDisplay
       isError={ query.isError }
-      itemsNum={ query.data?.items?.length }
+      items={ query.data?.items }
       emptyText="There are no blocks."
+      content={ content }
       actionBar={ actionBar }
-    >
-      { content }
-    </DataListDisplay>
+    />
   );
 };
 

@@ -1,27 +1,24 @@
-import { Flex } from '@chakra-ui/react';
+import { Flex, Td, Tr, Skeleton } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
 import React from 'react';
 
 import type { TokenInfo } from 'types/api/token';
 
 import config from 'configs/app';
-import getItemIndex from 'lib/getItemIndex';
-import { getTokenTypeName } from 'lib/token/tokenTypes';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { TableCell, TableRow } from 'toolkit/chakra/table';
-import { Tag } from 'toolkit/chakra/tag';
 import AddressAddToWallet from 'ui/shared/address/AddressAddToWallet';
+import Tag from 'ui/shared/chakra/Tag';
 import type { EntityProps as AddressEntityProps } from 'ui/shared/entities/address/AddressEntity';
 import AddressEntity from 'ui/shared/entities/address/AddressEntity';
 import TokenEntity from 'ui/shared/entities/token/TokenEntity';
-import TruncatedValue from 'ui/shared/TruncatedValue';
 
 type Props = {
   token: TokenInfo;
   index: number;
   page: number;
   isLoading?: boolean;
-};
+}
+
+const PAGE_SIZE = 50;
 
 const bridgedTokensFeature = config.features.bridgedTokens;
 
@@ -33,11 +30,10 @@ const TokensTableItem = ({
 }: Props) => {
 
   const {
-    address_hash: addressHash,
-    filecoin_robust_address: filecoinRobustAddress,
+    address,
     exchange_rate: exchangeRate,
     type,
-    holders_count: holdersCount,
+    holders,
     circulating_market_cap: marketCap,
     origin_chain_id: originalChainId,
   } = token;
@@ -47,29 +43,32 @@ const TokensTableItem = ({
     undefined;
 
   const tokenAddress: AddressEntityProps['address'] = {
-    hash: addressHash,
-    filecoin: {
-      robust: filecoinRobustAddress,
-    },
+    hash: address,
     name: '',
+    implementation_name: null,
     is_contract: true,
     is_verified: false,
-    ens_domain_name: null,
-    implementations: null,
   };
 
   return (
-    <TableRow className="group">
-      <TableCell>
+    <Tr
+      sx={{
+        '&:hover [aria-label="Add token to wallet"]': {
+          opacity: 1,
+        },
+      }}
+    >
+      <Td>
         <Flex alignItems="flex-start">
           <Skeleton
-            loading={ isLoading }
-            textStyle="sm"
+            isLoaded={ !isLoading }
+            fontSize="sm"
+            lineHeight="20px"
             fontWeight={ 600 }
             mr={ 3 }
             minW="28px"
           >
-            { getItemIndex(index, page) }
+            { (page - 1) * PAGE_SIZE + index + 1 }
           </Skeleton>
           <Flex overflow="hidden" flexDir="column" rowGap={ 2 }>
             <TokenEntity
@@ -77,7 +76,7 @@ const TokensTableItem = ({
               isLoading={ isLoading }
               jointSymbol
               noCopy
-              textStyle="sm"
+              fontSize="sm"
               fontWeight="700"
             />
             <Flex columnGap={ 2 } py="5px" alignItems="center">
@@ -85,50 +84,45 @@ const TokensTableItem = ({
                 address={ tokenAddress }
                 isLoading={ isLoading }
                 noIcon
-                textStyle="sm"
+                fontSize="sm"
                 fontWeight={ 500 }
-                linkVariant="secondary"
               />
               <AddressAddToWallet
                 token={ token }
                 isLoading={ isLoading }
                 iconSize={ 5 }
                 opacity={ 0 }
-                _groupHover={{ opacity: 1 }}
               />
             </Flex>
             <Flex columnGap={ 1 }>
-              <Tag loading={ isLoading }>{ getTokenTypeName(type) }</Tag>
-              { bridgedChainTag && <Tag loading={ isLoading }>{ bridgedChainTag }</Tag> }
+              <Tag isLoading={ isLoading }>{ type }</Tag>
+              { bridgedChainTag && <Tag isLoading={ isLoading }>{ bridgedChainTag }</Tag> }
             </Flex>
           </Flex>
         </Flex>
-      </TableCell>
-      <TableCell isNumeric>
-        <TruncatedValue
-          value={ exchangeRate ? `$${ Number(exchangeRate).toLocaleString(undefined, { minimumSignificantDigits: 4 }) }` : '' }
-          isLoading={ isLoading }
-          maxW="100%"
-        />
-      </TableCell>
-      <TableCell isNumeric maxWidth="300px" width="300px">
-        <TruncatedValue
-          value={ marketCap ? `$${ BigNumber(marketCap).toFormat() }` : '' }
-          isLoading={ isLoading }
-          maxW="100%"
-        />
-      </TableCell>
-      <TableCell isNumeric>
+      </Td>
+      <Td isNumeric>
+        <Skeleton isLoaded={ !isLoading } fontSize="sm" lineHeight="24px" fontWeight={ 500 } display="inline-block">
+          { exchangeRate && `$${ Number(exchangeRate).toLocaleString(undefined, { minimumSignificantDigits: 4 }) }` }
+        </Skeleton>
+      </Td>
+      <Td isNumeric maxWidth="300px" width="300px">
+        <Skeleton isLoaded={ !isLoading } fontSize="sm" lineHeight="24px" fontWeight={ 500 } display="inline-block">
+          { marketCap && `$${ BigNumber(marketCap).toFormat() }` }
+        </Skeleton>
+      </Td>
+      <Td isNumeric>
         <Skeleton
-          loading={ isLoading }
-          textStyle="sm"
+          isLoaded={ !isLoading }
+          fontSize="sm"
+          lineHeight="24px"
           fontWeight={ 500 }
           display="inline-block"
         >
-          { Number(holdersCount).toLocaleString() }
+          { Number(holders).toLocaleString() }
         </Skeleton>
-      </TableCell>
-    </TableRow>
+      </Td>
+    </Tr>
   );
 };
 

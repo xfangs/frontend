@@ -1,36 +1,44 @@
+import Head from 'next/head';
 import React from 'react';
 
 import type { Route } from 'nextjs-routes';
-import type { Props as PageProps } from 'nextjs/getServerSideProps';
-import PageMetadata from 'nextjs/PageMetadata';
 
 import useAdblockDetect from 'lib/hooks/useAdblockDetect';
 import useGetCsrfToken from 'lib/hooks/useGetCsrfToken';
-import useIsMounted from 'lib/hooks/useIsMounted';
-import useNotifyOnNavigation from 'lib/hooks/useNotifyOnNavigation';
+import * as metadata from 'lib/metadata';
 import * as mixpanel from 'lib/mixpanel';
+import { init as initSentry } from 'lib/sentry/config';
 
-interface Props<Pathname extends Route['pathname']> {
-  pathname: Pathname;
+type Props = Route & {
   children: React.ReactNode;
-  query?: PageProps<Pathname>['query'];
-  apiData?: PageProps<Pathname>['apiData'];
 }
 
-const PageNextJs = <Pathname extends Route['pathname']>(props: Props<Pathname>) => {
-  const isMounted = useIsMounted();
+initSentry();
+
+const PageNextJs = (props: Props) => {
+  const { title, description, opengraph } = metadata.generate(props);
 
   useGetCsrfToken();
   useAdblockDetect();
-  useNotifyOnNavigation();
 
   const isMixpanelInited = mixpanel.useInit();
   mixpanel.useLogPageView(isMixpanelInited);
 
   return (
     <>
-      <PageMetadata pathname={ props.pathname } query={ props.query } apiData={ props.apiData }/>
-      { isMounted ? props.children : null }
+      <Head>
+        <title>{ title }</title>
+        <meta name="description" content={ description }/>
+
+        { /* OG TAGS */ }
+        <meta property="og:title" content={ opengraph.title }/>
+        { opengraph.description && <meta property="og:description" content={ opengraph.description }/> }
+        <meta property="og:image" content={ opengraph.imageUrl }/>
+        <meta name="twitter:card" content="summary_large_image"/>
+        <meta property="twitter:image" content={ opengraph.imageUrl }/>
+        <meta property="og:type" content="website"/>
+      </Head>
+      { props.children }
     </>
   );
 };

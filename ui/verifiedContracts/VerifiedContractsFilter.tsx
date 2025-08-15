@@ -1,41 +1,45 @@
-import { createListCollection } from '@chakra-ui/react';
+import {
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
+  useDisclosure,
+} from '@chakra-ui/react';
 import React from 'react';
 
-import type { VerifiedContractsFilter as TVerifiedContractsFilter } from 'types/api/contracts';
+import type { VerifiedContractsFilters } from 'types/api/contracts';
 
-import config from 'configs/app';
-import type { SelectOption } from 'toolkit/chakra/select';
-import PopoverFilterRadio from 'ui/shared/filters/PopoverFilterRadio';
-
-type OptionValue = TVerifiedContractsFilter | 'all';
-
-const OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: 'solidity', label: 'Solidity' },
-  { value: 'vyper', label: 'Vyper' },
-  { value: 'yul', label: 'Yul' },
-  { value: 'scilla', label: 'Scilla' },
-].filter(({ value }) => value === 'all' || config.UI.views.address.languageFilters.includes(value)) as Array<{ value: OptionValue; label: string }>;
-
-const collection = createListCollection<SelectOption>({
-  items: OPTIONS,
-});
+import FilterButton from 'ui/shared/filters/FilterButton';
 
 interface Props {
-  hasActiveFilter: boolean;
-  defaultValue: TVerifiedContractsFilter | undefined;
+  isActive: boolean;
+  defaultValue: VerifiedContractsFilters['filter'] | undefined;
   onChange: (nextValue: string | Array<string>) => void;
 }
 
-const VerifiedContractsFilter = ({ onChange, defaultValue, hasActiveFilter }: Props) => {
+const VerifiedContractsFilter = ({ onChange, defaultValue, isActive }: Props) => {
+  const { isOpen, onToggle } = useDisclosure();
+
   return (
-    <PopoverFilterRadio
-      name="verified_contracts_filter"
-      collection={ collection }
-      onChange={ onChange }
-      hasActiveFilter={ hasActiveFilter }
-      initialValue={ defaultValue || OPTIONS[0].value }
-    />
+    <Menu>
+      <MenuButton>
+        <FilterButton
+          isActive={ isOpen || isActive }
+          appliedFiltersNum={ isActive ? 1 : 0 }
+          onClick={ onToggle }
+          as="div"
+        />
+      </MenuButton>
+      <MenuList zIndex="popover">
+        <MenuOptionGroup defaultValue={ defaultValue || 'all' } title="Filter" type="radio" onChange={ onChange }>
+          <MenuItemOption value="all">All</MenuItemOption>
+          <MenuItemOption value="solidity">Solidity</MenuItemOption>
+          <MenuItemOption value="vyper">Vyper</MenuItemOption>
+          <MenuItemOption value="yul">Yul</MenuItemOption>
+        </MenuOptionGroup>
+      </MenuList>
+    </Menu>
   );
 };
 

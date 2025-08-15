@@ -1,7 +1,5 @@
 import type { TxInterpretationResponse } from 'types/api/txInterpretation';
 
-import { hash } from 'mocks/address/address';
-
 export const txInterpretation: TxInterpretationResponse = {
   data: {
     summaries: [ {
@@ -15,8 +13,8 @@ export const txInterpretation: TxInterpretationResponse = {
             name: 'Duck',
             type: 'ERC-20',
             symbol: 'DUCK',
-            address_hash: '0x486a3c5f34cDc4EF133f248f1C81168D78da52e8',
-            holders_count: '1152',
+            address: '0x486a3c5f34cDc4EF133f248f1C81168D78da52e8',
+            holders: '1152',
             decimals: '18',
             icon_url: null,
             total_supply: '210000000000000000000000000',
@@ -27,15 +25,14 @@ export const txInterpretation: TxInterpretationResponse = {
         to_address: {
           type: 'address',
           value: {
-            hash: hash,
-            implementations: null,
+            hash: '0x48c04ed5691981C42154C6167398f95e8f38a7fF',
+            implementation_name: null,
             is_contract: false,
             is_verified: false,
             name: null,
             private_tags: [],
             public_tags: [],
             watchlist_names: [],
-            ens_domain_name: null,
           },
         },
         timestamp: {

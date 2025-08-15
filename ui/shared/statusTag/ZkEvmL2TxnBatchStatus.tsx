@@ -1,6 +1,6 @@
 import React from 'react';
 
-import type { ZkEvmL2TxnBatchesItem } from 'types/api/zkEvmL2';
+import type { ZkEvmL2TxnBatchesItem } from 'types/api/zkEvmL2TxnBatches';
 
 import type { StatusTagType } from './StatusTag';
 import StatusTag from './StatusTag';
@@ -23,7 +23,7 @@ const ZkEvmL2TxnBatchStatus = ({ status, isLoading }: Props) => {
       break;
   }
 
-  return <StatusTag type={ type } text={ status } loading={ isLoading }/>;
+  return <StatusTag type={ type } text={ status } isLoading={ isLoading }/>;
 };
 
 export default ZkEvmL2TxnBatchStatus;

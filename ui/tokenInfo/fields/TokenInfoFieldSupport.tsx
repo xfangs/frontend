@@ -1,25 +1,38 @@
+import { FormControl, Input } from '@chakra-ui/react';
 import React from 'react';
+import type { Control, ControllerProps } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 
 import type { Fields } from '../types';
 
-import type { FieldProps } from 'toolkit/chakra/field';
-import { FormFieldText } from 'toolkit/components/forms/fields/FormFieldText';
-import { emailValidator } from 'toolkit/components/forms/validators/email';
-import { urlValidator } from 'toolkit/components/forms/validators/url';
+import { validator as emailValidator } from 'lib/validations/email';
+import { validator as urlValidator } from 'lib/validations/url';
+import InputPlaceholder from 'ui/shared/InputPlaceholder';
 
 interface Props {
-  readOnly?: boolean;
-  size?: FieldProps['size'];
+  control: Control<Fields>;
+  isReadOnly?: boolean;
 }
 
-const TokenInfoFieldSupport = (props: Props) => {
-  const validate = React.useCallback((newValue: string | undefined) => {
-    if (typeof newValue !== 'string') {
-      return true;
-    }
+const TokenInfoFieldSupport = ({ control, isReadOnly }: Props) => {
+  const renderControl: ControllerProps<Fields, 'support'>['render'] = React.useCallback(({ field, fieldState, formState }) => {
 
+    return (
+      <FormControl variant="floating" id={ field.name } size={{ base: 'md', lg: 'lg' }}>
+        <Input
+          { ...field }
+          isInvalid={ Boolean(fieldState.error) }
+          isDisabled={ formState.isSubmitting || isReadOnly }
+          autoComplete="off"
+        />
+        <InputPlaceholder text="Support URL or email" error={ fieldState.error }/>
+      </FormControl>
+    );
+  }, [ isReadOnly ]);
+
+  const validate = React.useCallback((newValue: string | undefined) => {
     const urlValidationResult = urlValidator(newValue);
-    const emailValidationResult = emailValidator(newValue);
+    const emailValidationResult = emailValidator(newValue || '');
 
     if (urlValidationResult === true || emailValidationResult === true) {
       return true;
@@ -29,11 +42,11 @@ const TokenInfoFieldSupport = (props: Props) => {
   }, []);
 
   return (
-    <FormFieldText<Fields, 'support'>
+    <Controller
       name="support"
-      placeholder="Support URL or email"
+      control={ control }
+      render={ renderControl }
       rules={{ validate }}
-      { ...props }
     />
   );
 };

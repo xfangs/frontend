@@ -1,8 +1,7 @@
-import { Box } from '@chakra-ui/react';
+import { Alert, AlertIcon, AlertTitle } from '@chakra-ui/react';
 import React from 'react';
 
 import config from 'configs/app';
-import { Alert } from 'toolkit/chakra/alert';
 
 const MaintenanceAlert = () => {
   if (!config.UI.maintenanceAlert.message) {
@@ -10,18 +9,18 @@ const MaintenanceAlert = () => {
   }
 
   return (
-    <Alert status="info" showIcon>
-      <Box
+    <Alert status="info" colorScheme="gray" py={ 3 } borderRadius="md">
+      <AlertIcon display={{ base: 'none', lg: 'flex' }}/>
+      <AlertTitle
         dangerouslySetInnerHTML={{ __html: config.UI.maintenanceAlert.message }}
-        css={{
+        sx={{
           '& a': {
-            color: 'link.primary',
+            color: 'link',
             _hover: {
-              color: 'link.primary.hover',
+              color: 'link_hovered',
             },
           },
         }}
-
       />
     </Alert>
   );

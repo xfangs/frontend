@@ -1,13 +1,11 @@
-import { Box } from '@chakra-ui/react';
+import { Box, Button, Skeleton, useDisclosure } from '@chakra-ui/react';
 import React, { useCallback, useState } from 'react';
 
 import type { CustomAbi } from 'types/api/account';
 
 import useApiQuery from 'lib/api/useApiQuery';
+import useRedirectForInvalidAuthToken from 'lib/hooks/useRedirectForInvalidAuthToken';
 import { CUSTOM_ABI } from 'stubs/account';
-import { Button } from 'toolkit/chakra/button';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { useDisclosure } from 'toolkit/hooks/useDisclosure';
 import CustomAbiModal from 'ui/customAbi/CustomAbiModal/CustomAbiModal';
 import CustomAbiListItem from 'ui/customAbi/CustomAbiTable/CustomAbiListItem';
 import CustomAbiTable from 'ui/customAbi/CustomAbiTable/CustomAbiTable';
@@ -15,7 +13,6 @@ import DeleteCustomAbiModal from 'ui/customAbi/DeleteCustomAbiModal';
 import AccountPageDescription from 'ui/shared/AccountPageDescription';
 import DataFetchAlert from 'ui/shared/DataFetchAlert';
 import PageTitle from 'ui/shared/Page/PageTitle';
-import useRedirectForInvalidAuthToken from 'ui/snippets/auth/useRedirectForInvalidAuthToken';
 
 const CustomAbiPage: React.FC = () => {
   const customAbiModalProps = useDisclosure();
@@ -25,7 +22,7 @@ const CustomAbiPage: React.FC = () => {
   const [ customAbiModalData, setCustomAbiModalData ] = useState<CustomAbi>();
   const [ deleteModalData, setDeleteModalData ] = useState<CustomAbi>();
 
-  const { data, isPlaceholderData, isError } = useApiQuery('general:custom_abi', {
+  const { data, isPlaceholderData, isError } = useApiQuery('custom_abi', {
     queryOptions: {
       placeholderData: Array(3).fill(CUSTOM_ABI),
     },
@@ -36,9 +33,9 @@ const CustomAbiPage: React.FC = () => {
     customAbiModalProps.onOpen();
   }, [ customAbiModalProps ]);
 
-  const onCustomAbiModalOpenChange = useCallback(({ open }: { open: boolean }) => {
-    !open && setCustomAbiModalData(undefined);
-    customAbiModalProps.onOpenChange({ open });
+  const onCustomAbiModalClose = useCallback(() => {
+    setCustomAbiModalData(undefined);
+    customAbiModalProps.onClose();
   }, [ customAbiModalProps ]);
 
   const onDeleteClick = useCallback((data: CustomAbi) => {
@@ -46,9 +43,9 @@ const CustomAbiPage: React.FC = () => {
     deleteModalProps.onOpen();
   }, [ deleteModalProps ]);
 
-  const onDeleteModalOpenChange = useCallback(({ open }: { open: boolean }) => {
-    !open && setDeleteModalData(undefined);
-    deleteModalProps.onOpenChange({ open });
+  const onDeleteModalClose = useCallback(() => {
+    setDeleteModalData(undefined);
+    deleteModalProps.onClose();
   }, [ deleteModalProps ]);
 
   const description = (
@@ -67,7 +64,7 @@ const CustomAbiPage: React.FC = () => {
         <Box display={{ base: 'block', lg: 'none' }}>
           { data?.map((item, index) => (
             <CustomAbiListItem
-              key={ item.id + (isPlaceholderData ? String(index) : '') }
+              key={ item.id + (isPlaceholderData ? index : '') }
               item={ item }
               isLoading={ isPlaceholderData }
               onDeleteClick={ onDeleteClick }
@@ -90,15 +87,16 @@ const CustomAbiPage: React.FC = () => {
       <>
         { description }
         { Boolean(data?.length) && list }
-        <Skeleton mt={ 8 } loading={ isPlaceholderData } display="inline-block">
+        <Skeleton mt={ 8 } isLoaded={ !isPlaceholderData } display="inline-block">
           <Button
+            size="lg"
             onClick={ customAbiModalProps.onOpen }
           >
             Add custom ABI
           </Button>
         </Skeleton>
-        <CustomAbiModal open={ customAbiModalProps.open } onOpenChange={ onCustomAbiModalOpenChange } data={ customAbiModalData }/>
-        { deleteModalData && <DeleteCustomAbiModal open={ deleteModalProps.open } onOpenChange={ onDeleteModalOpenChange } data={ deleteModalData }/> }
+        <CustomAbiModal { ...customAbiModalProps } onClose={ onCustomAbiModalClose } data={ customAbiModalData }/>
+        { deleteModalData && <DeleteCustomAbiModal { ...deleteModalProps } onClose={ onDeleteModalClose } data={ deleteModalData }/> }
       </>
     );
   })();

@@ -1,36 +1,28 @@
-import { chakra } from '@chakra-ui/react';
+import { LinkOverlay } from '@chakra-ui/react';
+import NextLink from 'next/link';
 import React from 'react';
 import type { MouseEvent } from 'react';
-
-import { route } from 'nextjs-routes';
-
-import { LinkOverlay } from 'toolkit/chakra/link';
 
 type Props = {
   id: string;
   url: string;
   external?: boolean;
   title: string;
-  onClick?: (event: MouseEvent, id: string) => void;
-  className?: string;
-};
+  onClick?: (event: MouseEvent) => void;
+}
 
-const MarketplaceAppCardLink = ({ url, external, id, title, onClick, className }: Props) => {
-  const handleClick = React.useCallback((event: MouseEvent) => {
-    onClick?.(event, id);
-  }, [ onClick, id ]);
-
-  return (
-    <LinkOverlay
-      href={ external ? url : route({ pathname: '/apps/[id]', query: { id } }) }
-      marginRight={ 2 }
-      className={ className }
-      external={ external }
-      onClick={ handleClick }
-    >
+const MarketplaceAppCardLink = ({ url, external, id, title, onClick }: Props) => {
+  return external ? (
+    <LinkOverlay href={ url } isExternal={ true }>
       { title }
     </LinkOverlay>
+  ) : (
+    <NextLink href={{ pathname: '/apps/[id]', query: { id } }} passHref legacyBehavior>
+      <LinkOverlay onClick={ onClick }>
+        { title }
+      </LinkOverlay>
+    </NextLink>
   );
 };
 
-export default chakra(MarketplaceAppCardLink);
+export default MarketplaceAppCardLink;

@@ -5,7 +5,7 @@ import type { AxesConfig, ChartMargin, TimeChartData } from 'ui/shared/chart/typ
 import useClientRect from 'lib/hooks/useClientRect';
 
 import calculateInnerSize from './utils/calculateInnerSize';
-import { getAxesParams } from './utils/timeChartAxis';
+import { getAxisParams, DEFAULT_MAXIMUM_SIGNIFICANT_DIGITS } from './utils/timeChartAxis';
 
 interface Props {
   data: TimeChartData;
@@ -19,27 +19,29 @@ export default function useTimeChartController({ data, margin, axesConfig }: Pro
 
   // we need to recalculate the axis scale whenever the rect width changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const axesParams = React.useMemo(() => getAxesParams(data, axesConfig), [ data, axesConfig, rect?.width ]);
+  const axisParams = React.useMemo(() => getAxisParams(data, axesConfig), [ data, axesConfig, rect?.width ]);
 
   const chartMargin = React.useMemo(() => {
-    const PIXELS_PER_DIGIT = 8;
-    const leftShift = axesConfig?.y?.noLabel ? 0 : PIXELS_PER_DIGIT * axesParams.y.labelFormatParams.maxLabelLength;
+    const exceedingDigits = (axisParams.y.labelFormatParams.maximumSignificantDigits ?? DEFAULT_MAXIMUM_SIGNIFICANT_DIGITS) -
+       DEFAULT_MAXIMUM_SIGNIFICANT_DIGITS;
+    const PIXELS_PER_DIGIT = 7;
+    const leftShift = PIXELS_PER_DIGIT * exceedingDigits;
 
     return {
       ...margin,
       left: (margin?.left ?? 0) + leftShift,
     };
-  }, [ axesParams.y.labelFormatParams.maxLabelLength, margin, axesConfig?.y?.noLabel ]);
+  }, [ axisParams.y.labelFormatParams.maximumSignificantDigits, margin ]);
 
   const { innerWidth, innerHeight } = calculateInnerSize(rect, chartMargin);
 
   const xScale = React.useMemo(() => {
-    return axesParams.x.scale.range([ 0, innerWidth ]);
-  }, [ axesParams.x.scale, innerWidth ]);
+    return axisParams.x.scale.range([ 0, innerWidth ]);
+  }, [ axisParams.x.scale, innerWidth ]);
 
   const yScale = React.useMemo(() => {
-    return axesParams.y.scale.range([ innerHeight, 0 ]);
-  }, [ axesParams.y.scale, innerHeight ]);
+    return axisParams.y.scale.range([ innerHeight, 0 ]);
+  }, [ axisParams.y.scale, innerHeight ]);
 
   return React.useMemo(() => {
     return {
@@ -48,16 +50,16 @@ export default function useTimeChartController({ data, margin, axesConfig }: Pro
       chartMargin,
       innerWidth,
       innerHeight,
-      axes: {
+      axis: {
         x: {
-          tickFormatter: axesParams.x.tickFormatter,
+          tickFormatter: axisParams.x.tickFormatter,
           scale: xScale,
         },
         y: {
-          tickFormatter: axesParams.y.tickFormatter,
+          tickFormatter: axisParams.y.tickFormatter,
           scale: yScale,
         },
       },
     };
-  }, [ axesParams.x.tickFormatter, axesParams.y.tickFormatter, chartMargin, innerHeight, innerWidth, rect, ref, xScale, yScale ]);
+  }, [ axisParams.x.tickFormatter, axisParams.y.tickFormatter, chartMargin, innerHeight, innerWidth, rect, ref, xScale, yScale ]);
 }

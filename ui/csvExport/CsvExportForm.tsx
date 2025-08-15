@@ -1,4 +1,4 @@
-import { chakra, Flex } from '@chakra-ui/react';
+import { Button, chakra, Flex } from '@chakra-ui/react';
 import React from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { useForm, FormProvider } from 'react-hook-form';
@@ -6,18 +6,14 @@ import { useForm, FormProvider } from 'react-hook-form';
 import type { FormFields } from './types';
 import type { CsvExportParams } from 'types/client/address';
 
-import config from 'configs/app';
 import buildUrl from 'lib/api/buildUrl';
 import type { ResourceName } from 'lib/api/resources';
 import dayjs from 'lib/date/dayjs';
 import downloadBlob from 'lib/downloadBlob';
-import { Alert } from 'toolkit/chakra/alert';
-import { Button } from 'toolkit/chakra/button';
-import { toaster } from 'toolkit/chakra/toaster';
-import ReCaptcha from 'ui/shared/reCaptcha/ReCaptcha';
-import useReCaptcha from 'ui/shared/reCaptcha/useReCaptcha';
+import useToast from 'lib/hooks/useToast';
 
 import CsvExportFormField from './CsvExportFormField';
+import CsvExportFormReCaptcha from './CsvExportFormReCaptcha';
 
 interface Props {
   hash: string;
@@ -25,78 +21,59 @@ interface Props {
   filterType?: CsvExportParams['filterType'] | null;
   filterValue?: CsvExportParams['filterValue'] | null;
   fileNameTemplate: string;
-  exportType: CsvExportParams['type'] | undefined;
 }
 
-const CsvExportForm = ({ hash, resource, filterType, filterValue, fileNameTemplate, exportType }: Props) => {
+const CsvExportForm = ({ hash, resource, filterType, filterValue, fileNameTemplate }: Props) => {
   const formApi = useForm<FormFields>({
     mode: 'onBlur',
     defaultValues: {
-      from: dayjs().subtract(1, 'day').format('YYYY-MM-DDTHH:mm'),
-      to: dayjs().format('YYYY-MM-DDTHH:mm'),
+      from: dayjs().subtract(1, 'day').format('YYYY-MM-DD'),
+      to: dayjs().format('YYYY-MM-DD'),
     },
   });
   const { handleSubmit, formState } = formApi;
-  const recaptcha = useReCaptcha();
+  const toast = useToast();
 
-  const apiFetchFactory = React.useCallback((data: FormFields) => {
-    return async(recaptchaToken?: string) => {
-      const url = buildUrl(resource, { hash } as never, {
+  const onFormSubmit: SubmitHandler<FormFields> = React.useCallback(async(data) => {
+    try {
+      const url = buildUrl(resource, undefined, {
         address_id: hash,
-        from_period: exportType !== 'holders' ? dayjs(data.from).toISOString() : null,
-        to_period: exportType !== 'holders' ? dayjs(data.to).toISOString() : null,
+        from_period: data.from,
+        to_period: data.to,
         filter_type: filterType,
         filter_value: filterValue,
-        recaptcha_response: recaptchaToken,
+        recaptcha_response: data.reCaptcha,
       });
 
       const response = await fetch(url, {
         headers: {
           'content-type': 'application/octet-stream',
-          ...(recaptchaToken && { 'recaptcha-v2-response': recaptchaToken }),
         },
       });
 
       if (!response.ok) {
-        throw new Error(response.statusText, {
-          cause: {
-            status: response.status,
-          },
-        });
+        throw new Error();
       }
 
-      return response;
-    };
-  }, [ resource, hash, exportType, filterType, filterValue ]);
-
-  const onFormSubmit: SubmitHandler<FormFields> = React.useCallback(async(data) => {
-    try {
-      const response = await recaptcha.fetchProtectedResource<Response>(apiFetchFactory(data));
-
       const blob = await response.blob();
-      const fileName = exportType === 'holders' ?
-        `${ fileNameTemplate }_${ hash }.csv` :
-        // eslint-disable-next-line max-len
-        `${ fileNameTemplate }_${ hash }_${ data.from }_${ data.to }${ filterType && filterValue ? '_with_filter_type_' + filterType + '_value_' + filterValue : '' }.csv`;
-      downloadBlob(blob, fileName);
+      downloadBlob(
+        blob,
+        `${ fileNameTemplate }_${ hash }_${ data.from }_${ data.to }
+        ${ filterType && filterValue ? '_with_filter_type_' + filterType + '_value_' + filterValue : '' }.csv`,
+      );
 
     } catch (error) {
-      toaster.error({
+      toast({
+        position: 'top-right',
         title: 'Error',
         description: (error as Error)?.message || 'Something went wrong. Try again later.',
+        status: 'error',
+        variant: 'subtle',
+        isClosable: true,
       });
     }
 
-  }, [ recaptcha, apiFetchFactory, exportType, fileNameTemplate, hash, filterType, filterValue ]);
-
-  if (!config.services.reCaptchaV2.siteKey) {
-    return (
-      <Alert status="error">
-        CSV export is not available at the moment since reCaptcha is not configured for this application.
-        Please contact the service maintainer to make necessary changes in the service configuration.
-      </Alert>
-    );
-  }
+  }, [ fileNameTemplate, hash, resource, filterType, filterValue, toast ]);
 
   return (
     <FormProvider { ...formApi }>
@@ -105,17 +82,18 @@ const CsvExportForm = ({ hash, resource, filterType, filterValue, fileNameTempla
         onSubmit={ handleSubmit(onFormSubmit) }
       >
         <Flex columnGap={ 5 } rowGap={ 3 } flexDir={{ base: 'column', lg: 'row' }} alignItems={{ base: 'flex-start', lg: 'center' }} flexWrap="wrap">
-          { exportType !== 'holders' && <CsvExportFormField name="from" formApi={ formApi }/> }
-          { exportType !== 'holders' && <CsvExportFormField name="to" formApi={ formApi }/> }
+          <CsvExportFormField name="from" formApi={ formApi }/>
+          <CsvExportFormField name="to" formApi={ formApi }/>
+          <CsvExportFormReCaptcha formApi={ formApi }/>
         </Flex>
-        <ReCaptcha { ...recaptcha }/>
         <Button
           variant="solid"
+          size="lg"
           type="submit"
           mt={ 8 }
-          loading={ formState.isSubmitting }
+          isLoading={ formState.isSubmitting }
           loadingText="Download"
-          disabled={ Boolean(formState.errors.from || formState.errors.to || recaptcha.isInitError) }
+          isDisabled={ !formState.isValid }
         >
           Download
         </Button>

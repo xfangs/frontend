@@ -2,10 +2,10 @@ import React from 'react';
 
 import type { TxAction } from 'types/api/txAction';
 
-import * as DetailedInfo from 'ui/shared/DetailedInfo/DetailedInfo';
-import DetailedInfoActionsWrapper from 'ui/shared/DetailedInfo/DetailedInfoActionsWrapper';
+import DetailsInfoItemDivider from 'ui/shared/DetailsInfoItemDivider';
 
 import TxDetailsAction from './TxDetailsAction';
+import TxDetailsActionsWrapper from './TxDetailsActionsWrapper';
 
 interface Props {
   actions: Array<TxAction>;
@@ -15,10 +15,10 @@ interface Props {
 const TxDetailsActionsRaw = ({ actions, isLoading }: Props) => {
   return (
     <>
-      <DetailedInfoActionsWrapper isLoading={ isLoading } type="tx">
+      <TxDetailsActionsWrapper isLoading={ isLoading }>
         { actions.map((action, index: number) => <TxDetailsAction key={ index } action={ action }/>) }
-      </DetailedInfoActionsWrapper>
-      <DetailedInfo.ItemDivider/>
+      </TxDetailsActionsWrapper>
+      <DetailsInfoItemDivider/>
     </>
   );
 };

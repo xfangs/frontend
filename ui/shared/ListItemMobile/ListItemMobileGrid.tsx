@@ -1,31 +1,35 @@
-import { Grid, chakra, GridItem } from '@chakra-ui/react';
+import { Grid, chakra, GridItem, Skeleton } from '@chakra-ui/react';
+import { motion } from 'framer-motion';
 import React from 'react';
-
-import { Skeleton } from 'toolkit/chakra/skeleton';
 
 interface ContainerProps {
   className?: string;
-  animation?: string;
+  isAnimated?: boolean;
   children: React.ReactNode;
 }
 
-const Container = chakra(({ animation, children, className }: ContainerProps) => {
+const Container = chakra(({ isAnimated, children, className }: ContainerProps) => {
   return (
     <Grid
+      as={ motion.div }
       w="100%"
-      animation={ animation }
+      initial={ isAnimated ? { opacity: 0, scale: 0.97 } : { opacity: 1, scale: 1 } }
+      animate={{ opacity: 1, scale: 1 }}
+      transitionDuration="normal"
+      transitionTimingFunction="linear"
       rowGap={ 2 }
       columnGap={ 2 }
       gridTemplateColumns="86px auto"
       alignItems="start"
       paddingY={ 4 }
-      borderColor="border.divider"
+      borderColor="divider"
       borderTopWidth="1px"
       _last={{
         borderBottomWidth: '1px',
       }}
       className={ className }
-      textStyle="sm"
+      fontSize="sm"
+      lineHeight="20px"
     >
       { children }
     </Grid>
@@ -42,7 +46,7 @@ const Label = chakra(({ children, className, isLoading }: LabelProps) => {
   return (
     <Skeleton
       className={ className }
-      loading={ isLoading }
+      isLoaded={ !isLoading }
       fontWeight={ 500 }
       my="5px"
       justifySelf="start"
@@ -62,7 +66,7 @@ const Value = chakra(({ children, className }: ValueProps) => {
     <GridItem
       className={ className }
       py="5px"
-      color="text.secondary"
+      color="text_secondary"
       overflow="hidden"
     >
       { children }

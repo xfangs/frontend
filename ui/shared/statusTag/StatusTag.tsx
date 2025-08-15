@@ -1,48 +1,46 @@
+import { TagLabel, Tooltip } from '@chakra-ui/react';
 import React from 'react';
 
-import capitalizeFirstLetter from 'lib/capitalizeFirstLetter';
-import type { BadgeProps } from 'toolkit/chakra/badge';
-import { Badge } from 'toolkit/chakra/badge';
-import { Tooltip } from 'toolkit/chakra/tooltip';
+import Tag from 'ui/shared/chakra/Tag';
 import type { IconName } from 'ui/shared/IconSvg';
 import IconSvg from 'ui/shared/IconSvg';
 
 export type StatusTagType = 'ok' | 'error' | 'pending';
 
-export interface Props extends BadgeProps {
+export interface Props {
   type: 'ok' | 'error' | 'pending';
   text: string;
   errorText?: string | null;
+  isLoading?: boolean;
 }
 
-const StatusTag = ({ type, text, errorText, ...rest }: Props) => {
+const StatusTag = ({ type, text, errorText, isLoading }: Props) => {
   let icon: IconName;
-  let colorPalette: BadgeProps['colorPalette'];
-
-  const capitalizedText = capitalizeFirstLetter(text);
+  let colorScheme;
 
   switch (type) {
     case 'ok':
       icon = 'status/success';
-      colorPalette = 'green';
+      colorScheme = 'green';
       break;
     case 'error':
       icon = 'status/error';
-      colorPalette = 'red';
+      colorScheme = 'red';
       break;
     case 'pending':
       icon = 'status/pending';
-      colorPalette = 'gray';
+      // FIXME: it's not gray on mockups
+      // need to implement new color scheme or redefine colors here
+      colorScheme = 'gray';
       break;
   }
 
-  const startElement = <IconSvg name={ icon } boxSize={ 2.5 }/>;
-
   return (
-    <Tooltip content={ errorText } disabled={ !errorText }>
-      <Badge colorPalette={ colorPalette } startElement={ startElement } { ...rest }>
-        { capitalizedText }
-      </Badge>
+    <Tooltip label={ errorText }>
+      <Tag colorScheme={ colorScheme } display="inline-flex" isLoading={ isLoading }>
+        <IconSvg boxSize={ 2.5 } name={ icon } mr={ 2 }/>
+        <TagLabel>{ text }</TagLabel>
+      </Tag>
     </Tooltip>
   );
 };

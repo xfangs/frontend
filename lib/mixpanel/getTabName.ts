@@ -1,5 +1,5 @@
-import { capitalize } from 'es-toolkit';
+import _capitalize from 'lodash/capitalize';
 
 export default function getTabName(tab: string) {
-  return tab !== '' ? capitalize(tab.replaceAll('_', ' ')) : 'Default';
+  return tab !== '' ? _capitalize(tab.replaceAll('_', ' ')) : 'Default';
 }

@@ -1,10 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import * as csp from 'nextjs/csp/index';
+import generateCspPolicy from 'nextjs/csp/generateCspPolicy';
 import * as middlewares from 'nextjs/middlewares/index';
 
-export async function middleware(req: NextRequest) {
+const cspPolicy = generateCspPolicy();
+
+export function middleware(req: NextRequest) {
   const isPageRequest = req.headers.get('accept')?.includes('text/html');
   const start = Date.now();
 
@@ -17,17 +19,9 @@ export async function middleware(req: NextRequest) {
     return accountResponse;
   }
 
-  const res = NextResponse.next();
-
-  middlewares.colorTheme(req, res);
-  middlewares.addressFormat(req, res);
-  middlewares.scamTokens(req, res);
-
   const end = Date.now();
-
-  const cspHeader = await csp.get();
-
-  res.headers.append('Content-Security-Policy', cspHeader);
+  const res = NextResponse.next();
+  res.headers.append('Content-Security-Policy', cspPolicy);
   res.headers.append('Server-Timing', `middleware;dur=${ end - start }`);
   res.headers.append('Docker-ID', process.env.HOSTNAME || '');
 

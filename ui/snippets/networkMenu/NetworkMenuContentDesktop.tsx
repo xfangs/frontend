@@ -1,11 +1,7 @@
-import { VStack, Flex, Box } from '@chakra-ui/react';
+import { PopoverContent, PopoverBody, Text, Tabs, TabList, TabPanels, TabPanel, Tab, VStack, Skeleton, Flex, useColorModeValue } from '@chakra-ui/react';
 import React from 'react';
 
 import type { FeaturedNetwork, NetworkGroup } from 'types/networks';
-
-import { PopoverBody, PopoverContent } from 'toolkit/chakra/popover';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'toolkit/chakra/tabs';
 
 import NetworkMenuLink from './NetworkMenuLink';
 
@@ -16,80 +12,65 @@ interface Props {
 
 const NetworkMenuPopup = ({ items, tabs }: Props) => {
   const selectedNetwork = items?.find(({ isActive }) => isActive);
-  const defaultTab = tabs.find((tab) => selectedNetwork?.group === tab);
-
-  const [ value, setValue ] = React.useState<NetworkGroup>(defaultTab ?? 'Mainnets');
-
-  const handleTabChange = React.useCallback(({ value }: { value: string }) => {
-    setValue(value as NetworkGroup);
-  }, []);
+  const selectedTab = tabs.findIndex((tab) => selectedNetwork?.group === tab);
+  const bgColor = useColorModeValue('blackAlpha.50', 'whiteAlpha.50');
 
   const content = !items || items.length === 0 ? (
     <>
-      <Flex alignItems="center">
-        <Flex h="32px" w="105px" bgColor={{ base: 'blackAlpha.50', _dark: 'whiteAlpha.50' }} borderRadius="base" px={ 4 } py={ 2 }>
-          <Skeleton loading h="16px" w="100%"/>
+      <Skeleton h="30px" w="120px"/>
+      <Flex mt={ 4 } alignItems="center">
+        <Flex h="40px" w="105px" bgColor={ bgColor } borderRadius="base" px={ 4 } py={ 2 }>
+          <Skeleton h="24px" w="100%"/>
         </Flex>
-        <Skeleton loading h="16px" w="68px" mx={ 4 }/>
-        <Skeleton loading h="16px" w="45px" mx={ 4 }/>
+        <Skeleton h="24px" w="68px" mx={ 4 }/>
+        <Skeleton h="24px" w="45px" mx={ 4 }/>
       </Flex>
-      <Flex mt={ 3 } flexDir="column" rowGap={ 2 }>
-        <Flex mx={ 3 } my={ 2 } alignItems="center">
-          <Skeleton loading h="30px" w="30px" borderRadius="full"/>
-          <Skeleton loading h="16px" w="120px" ml={ 3 }/>
+      <Flex mt={ 8 } flexDir="column" rowGap={ 2 }>
+        <Flex mx={ 4 } my={ 2 } alignItems="center">
+          <Skeleton h="30px" w="30px" borderRadius="full"/>
+          <Skeleton h="24px" w="120px" ml={ 3 }/>
         </Flex>
-        <Flex mx={ 3 } my={ 2 } alignItems="center">
-          <Skeleton loading h="30px" w="30px" borderRadius="full"/>
-          <Skeleton loading h="16px" w="180px" ml={ 3 }/>
+        <Flex mx={ 4 } my={ 2 } alignItems="center">
+          <Skeleton h="30px" w="30px" borderRadius="full"/>
+          <Skeleton h="24px" w="180px" ml={ 3 }/>
         </Flex>
-        <Flex mx={ 3 } my={ 2 } alignItems="center">
-          <Skeleton loading h="30px" w="30px" borderRadius="full"/>
-          <Skeleton loading h="16px" w="150px" ml={ 3 }/>
+        <Flex mx={ 4 } my={ 2 } alignItems="center">
+          <Skeleton h="30px" w="30px" borderRadius="full"/>
+          <Skeleton h="24px" w="150px" ml={ 3 }/>
         </Flex>
       </Flex>
     </>
   ) : (
-    <TabsRoot
-      variant="secondary"
-      size="sm"
-      lazyMount
-      value={ value }
-      onValueChange={ handleTabChange }
-    >
-      { tabs.length > 1 && (
-        <TabsList columnGap={ 2 } mb={ 4 }>
+    <>
+      <Text as="h4" fontSize="18px" lineHeight="30px" fontWeight="500">Networks</Text>
+      <Tabs variant="soft-rounded" mt={ 4 } isLazy defaultIndex={ selectedTab !== -1 ? selectedTab : undefined }>
+        { tabs.length > 1 && (
+          <TabList>
+            { tabs.map((tab) => <Tab key={ tab } textTransform="capitalize">{ tab }</Tab>) }
+          </TabList>
+        ) }
+        <TabPanels mt={ 8 }>
           { tabs.map((tab) => (
-            <TabsTrigger
-              key={ tab }
-              textTransform="capitalize"
-              value={ tab }
-            >
-              { tab }
-            </TabsTrigger>
+            <TabPanel key={ tab } p={ 0 }>
+              <VStack as="ul" spacing={ 2 } alignItems="stretch" mt={ 4 }>
+                { items
+                  .filter((network) => network.group === tab)
+                  .map((network) => (
+                    <NetworkMenuLink
+                      key={ network.title }
+                      { ...network }
+                    />
+                  )) }
+              </VStack>
+            </TabPanel>
           )) }
-        </TabsList>
-      ) }
-      <Box>
-        { tabs.map((tab) => (
-          <TabsContent key={ tab } value={ tab } p={ 0 }>
-            <VStack as="ul" gap={ 1 } alignItems="stretch" maxH="516px" overflowY="scroll">
-              { items
-                .filter((network) => network.group === tab)
-                .map((network) => (
-                  <NetworkMenuLink
-                    key={ network.title }
-                    { ...network }
-                  />
-                )) }
-            </VStack>
-          </TabsContent>
-        )) }
-      </Box>
-    </TabsRoot>
+        </TabPanels>
+      </Tabs>
+    </>
   );
 
   return (
-    <PopoverContent w="330px">
+    <PopoverContent w="382px">
       <PopoverBody>
         { content }
       </PopoverBody>

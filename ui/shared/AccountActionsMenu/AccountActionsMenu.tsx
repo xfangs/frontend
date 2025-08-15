@@ -1,18 +1,13 @@
-import { Box, chakra } from '@chakra-ui/react';
+import { Button, Menu, MenuButton, MenuList, Flex, Skeleton, chakra } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import React from 'react';
 
-import type { ItemProps } from './types';
-
 import config from 'configs/app';
+import useIsAccountActionAllowed from 'lib/hooks/useIsAccountActionAllowed';
 import * as mixpanel from 'lib/mixpanel/index';
 import getQueryParamString from 'lib/router/getQueryParamString';
-import { IconButton } from 'toolkit/chakra/icon-button';
-import { MenuContent, MenuRoot, MenuTrigger } from 'toolkit/chakra/menu';
-import { Skeleton } from 'toolkit/chakra/skeleton';
 import IconSvg from 'ui/shared/IconSvg';
 
-import MetadataUpdateMenuItem from './items/MetadataUpdateMenuItem';
 import PrivateTagMenuItem from './items/PrivateTagMenuItem';
 import PublicTagMenuItem from './items/PublicTagMenuItem';
 import TokenInfoMenuItem from './items/TokenInfoMenuItem';
@@ -20,71 +15,52 @@ import TokenInfoMenuItem from './items/TokenInfoMenuItem';
 interface Props {
   isLoading?: boolean;
   className?: string;
-  showUpdateMetadataItem?: boolean;
 }
 
-const AccountActionsMenu = ({ isLoading, className, showUpdateMetadataItem }: Props) => {
+const AccountActionsMenu = ({ isLoading, className }: Props) => {
   const router = useRouter();
 
   const hash = getQueryParamString(router.query.hash);
   const isTokenPage = router.pathname === '/token/[hash]';
-  const isTokenInstancePage = router.pathname === '/token/[hash]/instance/[id]';
   const isTxPage = router.pathname === '/tx/[hash]';
+  const isAccountActionAllowed = useIsAccountActionAllowed();
 
   const handleButtonClick = React.useCallback(() => {
     mixpanel.logEvent(mixpanel.EventTypes.PAGE_WIDGET, { Type: 'Address actions (more button)' });
   }, []);
 
-  const items = [
-    {
-      render: (props: ItemProps) => <MetadataUpdateMenuItem { ...props }/>,
-      enabled: isTokenInstancePage && showUpdateMetadataItem,
-    },
-    {
-      render: (props: ItemProps) => <TokenInfoMenuItem { ...props }/>,
-      enabled: config.features.account.isEnabled && isTokenPage && config.features.addressVerification.isEnabled,
-    },
-    {
-      render: (props: ItemProps) => <PrivateTagMenuItem { ...props } entityType={ isTxPage ? 'tx' : 'address' }/>,
-      enabled: config.features.account.isEnabled,
-    },
-    {
-      render: (props: ItemProps) => <PublicTagMenuItem { ...props }/>,
-      enabled: config.features.account.isEnabled && !isTxPage && config.features.publicTagsSubmission.isEnabled,
-    },
-  ].filter(({ enabled }) => enabled);
-
-  if (items.length === 0) {
+  if (!config.features.account.isEnabled) {
     return null;
   }
 
-  if (isLoading) {
-    return <Skeleton loading w="36px" h="32px" borderRadius="base" className={ className }/>;
-  }
-
-  if (items.length === 1) {
-    return (
-      <Box className={ className }>
-        { items[0].render({ type: 'button', hash }) }
-      </Box>
-    );
-  }
-
   return (
-    <MenuRoot unmountOnExit={ false }>
-      <MenuTrigger asChild>
-        <IconButton variant="icon_secondary" size="md" className={ className } onClick={ handleButtonClick } aria-label="Show address menu">
-          <IconSvg name="dots"/>
-        </IconButton>
-      </MenuTrigger>
-      <MenuContent>
-        { items.map(({ render }, index) => (
-          <React.Fragment key={ index }>
-            { render({ type: 'menu_item', hash }) }
-          </React.Fragment>
-        )) }
-      </MenuContent>
-    </MenuRoot>
+    <Menu>
+      <Skeleton isLoaded={ !isLoading } borderRadius="base" className={ className }>
+        <MenuButton
+          as={ Button }
+          size="sm"
+          variant="outline"
+          onClick={ handleButtonClick }
+        >
+          <Flex alignItems="center">
+            <span>More</span>
+            <IconSvg name="arrows/east-mini" transform="rotate(-90deg)" boxSize={ 5 } ml={ 1 }/>
+          </Flex>
+        </MenuButton>
+      </Skeleton>
+      <MenuList minWidth="180px" zIndex="popover">
+        { isTokenPage && config.features.addressVerification.isEnabled &&
+          <TokenInfoMenuItem py={ 2 } px={ 4 } hash={ hash } onBeforeClick={ isAccountActionAllowed }/> }
+        <PrivateTagMenuItem
+          py={ 2 }
+          px={ 4 }
+          hash={ hash }
+          onBeforeClick={ isAccountActionAllowed }
+          type={ isTxPage ? 'tx' : 'address' }
+        />
+        { !isTxPage && <PublicTagMenuItem py={ 2 } px={ 4 } hash={ hash } onBeforeClick={ isAccountActionAllowed }/> }
+      </MenuList>
+    </Menu>
   );
 };
 

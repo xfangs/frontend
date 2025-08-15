@@ -1,8 +1,5 @@
-import type { SolidityScanReport } from 'lib/solidityScan/schema';
-
-export const solidityscanReportAverage: SolidityScanReport = {
+export const solidityscanReportAverage = {
   scan_report: {
-    contractname: 'foo',
     scan_status: 'scan_done',
     scan_summary: {
       issue_severity_distribution: {
@@ -13,15 +10,18 @@ export const solidityscanReportAverage: SolidityScanReport = {
         low: 2,
         medium: 0,
       },
+      lines_analyzed_count: 18,
+      scan_time_taken: 1,
+      score: '3.61',
       score_v2: '72.22',
+      threat_score: '94.74',
     },
     scanner_reference_url: 'https://solidityscan.com/quickscan/0xc1EF7811FF2ebFB74F80ed7423f2AdAA37454be2/blockscout/eth-goerli?ref=blockscout',
   },
 };
 
-export const solidityscanReportGreat: SolidityScanReport = {
+export const solidityscanReportGreat = {
   scan_report: {
-    contractname: 'foo',
     scan_status: 'scan_done',
     scan_summary: {
       issue_severity_distribution: {
@@ -32,15 +32,18 @@ export const solidityscanReportGreat: SolidityScanReport = {
         low: 0,
         medium: 0,
       },
+      lines_analyzed_count: 18,
+      scan_time_taken: 1,
+      score: '3.61',
       score_v2: '100',
+      threat_score: '94.74',
     },
     scanner_reference_url: 'https://solidityscan.com/quickscan/0xc1EF7811FF2ebFB74F80ed7423f2AdAA37454be2/blockscout/eth-goerli?ref=blockscout',
   },
 };
 
-export const solidityscanReportLow: SolidityScanReport = {
+export const solidityscanReportLow = {
   scan_report: {
-    contractname: 'foo',
     scan_status: 'scan_done',
     scan_summary: {
       issue_severity_distribution: {
@@ -51,7 +54,11 @@ export const solidityscanReportLow: SolidityScanReport = {
         low: 2,
         medium: 10,
       },
+      lines_analyzed_count: 18,
+      scan_time_taken: 1,
+      score: '3.61',
       score_v2: '22.22',
+      threat_score: '94.74',
     },
     scanner_reference_url: 'https://solidityscan.com/quickscan/0xc1EF7811FF2ebFB74F80ed7423f2AdAA37454be2/blockscout/eth-goerli?ref=blockscout',
   },

@@ -1,40 +1,19 @@
-import { chakra, Flex, Text } from '@chakra-ui/react';
+import { Box, IconButton, Image, Link, LinkBox, Skeleton, useColorModeValue } from '@chakra-ui/react';
 import type { MouseEvent } from 'react';
 import React, { useCallback } from 'react';
 
-import type { MarketplaceAppWithSecurityReport, ContractListTypes, AppRating } from 'types/client/marketplace';
+import type { MarketplaceAppPreview } from 'types/client/marketplace';
 
-import useIsMobile from 'lib/hooks/useIsMobile';
-import { useColorModeValue } from 'toolkit/chakra/color-mode';
-import { IconButton } from 'toolkit/chakra/icon-button';
-import { Image } from 'toolkit/chakra/image';
-import { Link, LinkBox } from 'toolkit/chakra/link';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { isBrowser } from 'toolkit/utils/isBrowser';
-import CopyToClipboard from 'ui/shared/CopyToClipboard';
+import IconSvg from 'ui/shared/IconSvg';
 
-import AppSecurityReport from './AppSecurityReport';
-import FavoriteIcon from './FavoriteIcon';
 import MarketplaceAppCardLink from './MarketplaceAppCardLink';
-import MarketplaceAppGraphLinks from './MarketplaceAppGraphLinks';
-import MarketplaceAppIntegrationIcon from './MarketplaceAppIntegrationIcon';
-import Rating from './Rating/Rating';
-import type { RateFunction } from './Rating/useRatings';
 
-interface Props extends MarketplaceAppWithSecurityReport {
+interface Props extends MarketplaceAppPreview {
   onInfoClick: (id: string) => void;
   isFavorite: boolean;
   onFavoriteClick: (id: string, isFavorite: boolean) => void;
   isLoading: boolean;
-  onAppClick: (event: MouseEvent, id: string) => void;
-  className?: string;
-  showContractList: (id: string, type: ContractListTypes) => void;
-  userRating?: AppRating;
-  rateApp: RateFunction;
-  isRatingSending: boolean;
-  isRatingLoading: boolean;
-  canRate: boolean | undefined;
-  graphLinks?: Array<{ title: string; url: string }>;
+  showDisclaimer: (id: string) => void;
 }
 
 const MarketplaceAppCard = ({
@@ -50,21 +29,17 @@ const MarketplaceAppCard = ({
   isFavorite,
   onFavoriteClick,
   isLoading,
-  internalWallet,
-  onAppClick,
-  securityReport,
-  className,
-  showContractList,
-  rating,
-  userRating,
-  rateApp,
-  isRatingSending,
-  isRatingLoading,
-  canRate,
-  graphLinks,
+  showDisclaimer,
 }: Props) => {
-  const isMobile = useIsMobile();
   const categoriesLabel = categories.join(', ');
+
+  const handleClick = useCallback((event: MouseEvent) => {
+    const isShown = window.localStorage.getItem('marketplace-disclaimer-shown');
+    if (!isShown) {
+      event.preventDefault();
+      showDisclaimer(id);
+    }
+  }, [ showDisclaimer, id ]);
 
   const handleInfoClick = useCallback((event: MouseEvent) => {
     event.preventDefault();
@@ -76,10 +51,10 @@ const MarketplaceAppCard = ({
   }, [ onFavoriteClick, id, isFavorite ]);
 
   const logoUrl = useColorModeValue(logo, logoDarkMode || logo);
+  const moreButtonBgGradient = `linear(to-r, ${ useColorModeValue('whiteAlpha.50', 'blackAlpha.50') }, ${ useColorModeValue('white', 'black') } 20%)`;
 
   return (
     <LinkBox
-      className={ className }
       _hover={{
         boxShadow: isLoading ? 'none' : 'md',
       }}
@@ -87,158 +62,126 @@ const MarketplaceAppCard = ({
         boxShadow: isLoading ? 'none' : 'md',
       }}
       borderRadius="md"
-      padding={{ base: 3, md: '20px' }}
-      borderWidth="1px"
-      borderColor={{ _light: 'gray.200', _dark: 'gray.600' }}
+      height="100%"
+      padding={{ base: 3, sm: '20px' }}
+      border="1px"
+      borderColor={ useColorModeValue('gray.200', 'gray.600') }
+      role="group"
     >
-      <Flex
-        flexDirection="column"
+      <Box
+        display={{ base: 'grid', sm: 'block' }}
+        gridTemplateColumns={{ base: '64px 1fr', sm: '1fr' }}
+        gridTemplateRows={{ base: 'none', sm: 'none' }}
+        gridRowGap={{ base: 2, sm: 'none' }}
+        gridColumnGap={{ base: 4, sm: 'none' }}
         height="100%"
-        alignContent="start"
-        gap={ 2 }
       >
-        <Flex
-          display={{ base: 'flex', md: 'contents' }}
-          gap={ 4 }
+        <Skeleton
+          isLoaded={ !isLoading }
+          gridRow={{ base: '1 / 4', sm: 'auto' }}
+          marginBottom={ 4 }
+          w={{ base: '64px', sm: '96px' }}
+          h={{ base: '64px', sm: '96px' }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
         >
-          <Skeleton
-            loading={ isLoading }
-            w={{ base: '64px', md: '96px' }}
-            h={{ base: '64px', md: '96px' }}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            mb={{ base: 0, md: 2 }}
-          >
-            <Image
-              src={ isLoading ? undefined : logoUrl }
-              alt={ `${ title } app icon` }
-              borderRadius="8px"
-            />
-          </Skeleton>
-
-          <Flex
-            display={{ base: 'flex', md: 'contents' }}
-            flexDirection="column"
-            gap={ 2 }
-            pt={ 1 }
-          >
-            <Skeleton
-              loading={ isLoading }
-              paddingRight={{ base: '40px', md: 0 }}
-              display="inline-flex"
-              alignItems="center"
-            >
-              <MarketplaceAppCardLink
-                id={ id }
-                url={ url }
-                external={ external }
-                title={ title }
-                onClick={ onAppClick }
-                fontWeight="semibold"
-                fontFamily="heading"
-                fontSize={{ base: 'sm', md: 'lg' }}
-                lineHeight={{ base: '20px', md: '28px' }}
-              />
-              <MarketplaceAppIntegrationIcon external={ external } internalWallet={ internalWallet }/>
-              <MarketplaceAppGraphLinks
-                links={ graphLinks }
-                ml={ 2 }
-                verticalAlign="middle"
-              />
-            </Skeleton>
-
-            <Skeleton
-              loading={ isLoading }
-              color="text.secondary"
-              fontSize="xs"
-              lineHeight="16px"
-            >
-              <span>{ categoriesLabel }</span>
-            </Skeleton>
-          </Flex>
-        </Flex>
+          <Image
+            src={ isLoading ? undefined : logoUrl }
+            alt={ `${ title } app icon` }
+            borderRadius="8px"
+          />
+        </Skeleton>
 
         <Skeleton
-          loading={ isLoading }
-          asChild
+          isLoaded={ !isLoading }
+          gridColumn={{ base: 2, sm: 'auto' }}
+          as="h3"
+          marginBottom={{ base: 0, sm: 2 }}
+          fontSize={{ base: 'sm', sm: 'lg' }}
+          fontWeight="semibold"
+          fontFamily="heading"
+          display="inline-block"
         >
-          <Text lineClamp={{ base: 2, md: 3 }} textStyle="sm">
-            { shortDescription }
-          </Text>
+          <MarketplaceAppCardLink
+            id={ id }
+            url={ url }
+            external={ external }
+            title={ title }
+            onClick={ handleClick }
+          />
+        </Skeleton>
+
+        <Skeleton
+          isLoaded={ !isLoading }
+          marginBottom={{ base: 0, sm: 2 }}
+          color="text_secondary"
+          fontSize="xs"
+        >
+          <span>{ categoriesLabel }</span>
+        </Skeleton>
+
+        <Skeleton
+          isLoaded={ !isLoading }
+          fontSize={{ base: 'xs', sm: 'sm' }}
+          lineHeight="20px"
+          noOfLines={ 4 }
+        >
+          { shortDescription }
         </Skeleton>
 
         { !isLoading && (
-          <Flex
-            alignItems="center"
-            justifyContent="space-between"
-            marginTop="auto"
+          <Box
+            position="absolute"
+            right={{ base: 3, sm: '20px' }}
+            bottom={{ base: 3, sm: '20px' }}
+            paddingLeft={ 8 }
+            bgGradient={ moreButtonBgGradient }
           >
             <Link
-              textStyle="sm"
-              fontWeight="500"
-              paddingRight={{ md: 2 }}
+              fontSize={{ base: 'xs', sm: 'sm' }}
+              display="flex"
+              alignItems="center"
+              paddingRight={{ sm: 2 }}
+              maxW="100%"
+              overflow="hidden"
               href="#"
               onClick={ handleInfoClick }
             >
-              More info
+            More
+
+              <IconSvg
+                name="arrows/north-east"
+                marginLeft={ 1 }
+                boxSize={ 4 }
+              />
             </Link>
-            <Flex alignItems="center" gap={ 1 }>
-              <Rating
-                appId={ id }
-                rating={ rating }
-                userRating={ userRating }
-                rate={ rateApp }
-                isSending={ isRatingSending }
-                isLoading={ isRatingLoading }
-                canRate={ canRate }
-                source="Discovery"
-              />
-              <IconButton
-                aria-label="Mark as favorite"
-                title="Mark as favorite"
-                variant="icon_secondary"
-                size="md"
-                onClick={ handleFavoriteClick }
-                selected={ isFavorite }
-              >
-                <FavoriteIcon isFavorite={ isFavorite }/>
-              </IconButton>
-              <CopyToClipboard
-                text={ isBrowser() ? window.location.origin + `/apps/${ id }` : '' }
-                type="share"
-                variant="icon_secondary"
-                size="md"
-                borderRadius="none"
-                ml={ 0 }
-                boxSize={ 8 }
-              />
-            </Flex>
-          </Flex>
+          </Box>
         ) }
 
-        { securityReport && (
-          <AppSecurityReport
-            id={ id }
-            securityReport={ securityReport }
-            showContractList={ showContractList }
-            isLoading={ isLoading }
-            source="Discovery view"
-            popoverPlacement={ isMobile ? 'bottom-end' : 'left' }
-            triggerWrapperProps={{
-              position: 'absolute',
-              right: { base: 3, md: 5 },
-              top: { base: '10px', md: 5 },
-            }}
-            buttonProps={{
-              border: 0,
-              padding: 0,
-            }}
+        { !isLoading && (
+          <IconButton
+            display={{ base: 'block', sm: isFavorite ? 'block' : 'none' }}
+            _groupHover={{ display: 'block' }}
+            position="absolute"
+            right={{ base: 3, sm: '10px' }}
+            top={{ base: 3, sm: '14px' }}
+            aria-label="Mark as favorite"
+            title="Mark as favorite"
+            variant="ghost"
+            colorScheme="gray"
+            w={ 9 }
+            h={ 8 }
+            onClick={ handleFavoriteClick }
+            icon={ isFavorite ?
+              <IconSvg name="star_filled" w={ 4 } h={ 4 } color="yellow.400"/> :
+              <IconSvg name="star_outline" w={ 4 } h={ 4 } color="gray.300"/>
+            }
           />
         ) }
-      </Flex>
+      </Box>
     </LinkBox>
   );
 };
 
-export default React.memo(chakra(MarketplaceAppCard));
+export default React.memo(MarketplaceAppCard);

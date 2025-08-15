@@ -9,25 +9,25 @@ import useApiFetch from 'lib/api/useApiFetch';
 import DeleteModal from 'ui/shared/DeleteModal';
 
 type Props = {
-  open: boolean;
-  onOpenChange: ({ open }: { open: boolean }) => void;
+  isOpen: boolean;
+  onClose: () => void;
   data: CustomAbi;
-};
+}
 
-const DeleteCustomAbiModal: React.FC<Props> = ({ open, onOpenChange, data }) => {
+const DeleteCustomAbiModal: React.FC<Props> = ({ isOpen, onClose, data }) => {
 
   const queryClient = useQueryClient();
   const apiFetch = useApiFetch();
 
   const mutationFn = useCallback(() => {
-    return apiFetch('general:custom_abi', {
+    return apiFetch('custom_abi', {
       pathParams: { id: String(data.id) },
       fetchParams: { method: 'DELETE' },
     });
   }, [ apiFetch, data.id ]);
 
   const onSuccess = useCallback(async() => {
-    queryClient.setQueryData([ resourceKey('general:custom_abi') ], (prevData: CustomAbis | undefined) => {
+    queryClient.setQueryData([ resourceKey('custom_abi') ], (prevData: CustomAbis | undefined) => {
       return prevData?.filter((item) => item.id !== data.id);
     });
   }, [ data, queryClient ]);
@@ -40,8 +40,8 @@ const DeleteCustomAbiModal: React.FC<Props> = ({ open, onOpenChange, data }) => 
 
   return (
     <DeleteModal
-      open={ open }
-      onOpenChange={ onOpenChange }
+      isOpen={ isOpen }
+      onClose={ onClose }
       title="Remove custom ABI"
       renderContent={ renderText }
       mutationFn={ mutationFn }

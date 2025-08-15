@@ -1,12 +1,16 @@
-import { chakra, Code, createListCollection } from '@chakra-ui/react';
+import { chakra, Checkbox, Code } from '@chakra-ui/react';
+import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
-import { useFormContext } from 'react-hook-form';
+import type { ControllerRenderProps } from 'react-hook-form';
+import { useFormContext, Controller } from 'react-hook-form';
 
 import type { FormFields } from '../types';
-import type { SmartContractVerificationConfig } from 'types/client/contract';
+import type { SmartContractVerificationConfig } from 'types/api/contract';
 
-import { Checkbox } from 'toolkit/chakra/checkbox';
-import { FormFieldSelectAsync } from 'toolkit/components/forms/fields/FormFieldSelectAsync';
+import { getResourceKey } from 'lib/api/useApiQuery';
+import useIsMobile from 'lib/hooks/useIsMobile';
+import FancySelect from 'ui/shared/FancySelect/FancySelect';
+import IconSvg from 'ui/shared/IconSvg';
 
 import ContractVerificationFormRow from '../ContractVerificationFormRow';
 
@@ -14,81 +18,79 @@ const OPTIONS_LIMIT = 50;
 
 interface Props {
   isVyper?: boolean;
-  isStylus?: boolean;
-  config: SmartContractVerificationConfig;
 }
 
-const ContractVerificationFieldCompiler = ({ isVyper, isStylus, config }: Props) => {
+const ContractVerificationFieldCompiler = ({ isVyper }: Props) => {
   const [ isNightly, setIsNightly ] = React.useState(false);
-  const { formState, getValues, resetField } = useFormContext<FormFields>();
+  const { formState, control, getValues, resetField } = useFormContext<FormFields>();
+  const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
+  const config = queryClient.getQueryData<SmartContractVerificationConfig>(getResourceKey('contract_verification_config'));
 
   const handleCheckboxChange = React.useCallback(() => {
-    setIsNightly(prev => {
-      if (prev) {
-        const field = getValues('compiler');
-        field?.[0]?.includes('nightly') && resetField('compiler', { defaultValue: [] });
-      }
-
-      return !prev;
-    });
-  }, [ getValues, resetField ]);
-
-  const versions = React.useMemo(() => {
-    if (isStylus) {
-      return config?.stylus_compiler_versions;
+    if (isNightly) {
+      const field = getValues('compiler');
+      field?.value.includes('nightly') && resetField('compiler', { defaultValue: null });
     }
-    if (isVyper) {
-      return config?.vyper_compiler_versions;
-    }
-    return config?.solidity_compiler_versions;
-  }, [ isStylus, isVyper, config?.solidity_compiler_versions, config?.stylus_compiler_versions, config?.vyper_compiler_versions ]);
+    setIsNightly(prev => !prev);
+  }, [ getValues, isNightly, resetField ]);
 
-  const loadOptions = React.useCallback(async(inputValue: string, currentValue: Array<string>) => {
-    const items = versions
-      ?.filter((value) => !inputValue || currentValue.includes(value) || value.toLowerCase().includes(inputValue.toLowerCase()))
-      .filter((value) => isNightly ? true : !value.includes('nightly'))
-      .sort((a, b) => {
-        if (currentValue.includes(a)) {
-          return -1;
-        }
-        if (currentValue.includes(b)) {
-          return 1;
-        }
-        return 0;
-      })
-      .slice(0, OPTIONS_LIMIT)
-      .map((value) => ({ label: value, value })) ?? [];
+  const options = React.useMemo(() => (
+    (isVyper ? config?.vyper_compiler_versions : config?.solidity_compiler_versions)?.map((option) => ({ label: option, value: option })) || []
+  ), [ config?.solidity_compiler_versions, config?.vyper_compiler_versions, isVyper ]);
 
-    return createListCollection({ items });
-  }, [ isNightly, versions ]);
+  const loadOptions = React.useCallback(async(inputValue: string) => {
+    return options
+      .filter(({ label }) => !inputValue || label.toLowerCase().includes(inputValue.toLowerCase()))
+      .filter(({ label }) => isNightly ? true : !label.includes('nightly'))
+      .slice(0, OPTIONS_LIMIT);
+  }, [ isNightly, options ]);
 
-  const extraControls = !isVyper && !isStylus ? (
-    <Checkbox
-      mt={ 2 }
-      checked={ isNightly }
-      onCheckedChange={ handleCheckboxChange }
-      disabled={ formState.isSubmitting }
-      size="sm"
-    >
-      Include nightly builds
-    </Checkbox>
-  ) : null;
+  const renderControl = React.useCallback(({ field }: {field: ControllerRenderProps<FormFields, 'compiler'>}) => {
+    const error = 'compiler' in formState.errors ? formState.errors.compiler : undefined;
+
+    return (
+      <FancySelect
+        { ...field }
+        loadOptions={ loadOptions }
+        defaultOptions
+        size={ isMobile ? 'md' : 'lg' }
+        placeholder="Compiler (enter version or use the dropdown)"
+        placeholderIcon={ <IconSvg name="search"/> }
+        isDisabled={ formState.isSubmitting }
+        error={ error }
+        isRequired
+        isAsync
+      />
+    );
+  }, [ formState.errors, formState.isSubmitting, isMobile, loadOptions ]);
 
   return (
     <ContractVerificationFormRow>
-      <FormFieldSelectAsync<FormFields, 'compiler'>
-        name="compiler"
-        placeholder="Compiler"
-        loadOptions={ loadOptions }
-        extraControls={ extraControls }
-        required
-      />
-      { isVyper || isStylus ? null : (
-        <chakra.div>
+      <>
+        { !isVyper && (
+          <Checkbox
+            size="lg"
+            mb={ 2 }
+            onChange={ handleCheckboxChange }
+            isDisabled={ formState.isSubmitting }
+          >
+            Include nightly builds
+          </Checkbox>
+        ) }
+        <Controller
+          name="compiler"
+          control={ control }
+          render={ renderControl }
+          rules={{ required: true }}
+        />
+      </>
+      { isVyper ? null : (
+        <chakra.div mt={{ base: 0, lg: 8 }}>
           <span >The compiler version is specified in </span>
-          <Code color="text.secondary">pragma solidity X.X.X</Code>
+          <Code color="text_secondary">pragma solidity X.X.X</Code>
           <span>. Use the compiler version rather than the nightly build. If using the Solidity compiler, run </span>
-          <Code color="text.secondary">solc —version</Code>
+          <Code color="text_secondary">solc —version</Code>
           <span> to check.</span>
         </chakra.div>
       ) }

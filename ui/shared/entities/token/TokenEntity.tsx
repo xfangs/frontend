@@ -1,22 +1,22 @@
-import { chakra } from '@chakra-ui/react';
+import type { ChakraProps } from '@chakra-ui/react';
+import { Image, Skeleton, chakra } from '@chakra-ui/react';
+import _omit from 'lodash/omit';
 import React from 'react';
 
 import type { TokenInfo } from 'types/api/token';
 
 import { route } from 'nextjs-routes';
 
-import { Image } from 'toolkit/chakra/image';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { TruncatedTextTooltip } from 'toolkit/components/truncation/TruncatedTextTooltip';
 import * as EntityBase from 'ui/shared/entities/base/components';
 import TokenLogoPlaceholder from 'ui/shared/TokenLogoPlaceholder';
+import TruncatedTextTooltip from 'ui/shared/TruncatedTextTooltip';
 
-import { distributeEntityProps, getIconProps } from '../base/utils';
+import { getIconProps } from '../base/utils';
 
 type LinkProps = EntityBase.LinkBaseProps & Pick<EntityProps, 'token'>;
 
 const Link = chakra((props: LinkProps) => {
-  const defaultHref = route({ pathname: '/token/[hash]', query: { ...props.query, hash: props.token.address_hash } });
+  const defaultHref = route({ pathname: '/token/[hash]', query: { ...props.query, hash: props.token.address } });
 
   return (
     <EntityBase.Link
@@ -28,7 +28,10 @@ const Link = chakra((props: LinkProps) => {
   );
 });
 
-type IconProps = Pick<EntityProps, 'token' | 'className'> & EntityBase.IconBaseProps;
+type IconProps = Pick<EntityProps, 'token' | 'isLoading' | 'iconSize' | 'noIcon' | 'className'> & {
+  marginRight?: ChakraProps['marginRight'];
+  boxSize?: ChakraProps['boxSize'];
+};
 
 const Icon = (props: IconProps) => {
   if (props.noIcon) {
@@ -37,18 +40,19 @@ const Icon = (props: IconProps) => {
 
   const styles = {
     marginRight: props.marginRight ?? 2,
-    boxSize: props.boxSize ?? getIconProps(props.variant).boxSize,
-    borderRadius: props.token.type === 'ERC-20' ? 'full' : 'base',
+    boxSize: props.boxSize ?? getIconProps(props.iconSize).boxSize,
+    borderRadius: 'base',
     flexShrink: 0,
   };
 
   if (props.isLoading) {
-    return <Skeleton { ...styles } loading className={ props.className }/>;
+    return <Skeleton { ...styles } className={ props.className }/>;
   }
 
   return (
     <Image
       { ...styles }
+      borderRadius={ props.token.type === 'ERC-20' ? 'full' : 'base' }
       className={ props.className }
       src={ props.token.icon_url ?? undefined }
       alt={ `${ props.token.name || 'token' } logo` }
@@ -62,16 +66,23 @@ type ContentProps = Omit<EntityBase.ContentBaseProps, 'text'> & Pick<EntityProps
 const Content = chakra((props: ContentProps) => {
   const nameString = [
     !props.onlySymbol && (props.token.name ?? 'Unnamed token'),
-    props.onlySymbol && (props.token.symbol ?? props.token.name ?? 'Unnamed token'),
+    props.onlySymbol && (props.token.symbol ?? ''),
     props.token.symbol && props.jointSymbol && !props.onlySymbol && `(${ props.token.symbol })`,
   ].filter(Boolean).join(' ');
 
   return (
-    <EntityBase.Content
-      { ...props }
-      text={ nameString }
-      truncation="tail"
-    />
+    <TruncatedTextTooltip label={ nameString }>
+      <Skeleton
+        isLoaded={ !props.isLoading }
+        display="inline-block"
+        whiteSpace="nowrap"
+        overflow="hidden"
+        textOverflow="ellipsis"
+        height="fit-content"
+      >
+        { nameString }
+      </Skeleton>
+    </TruncatedTextTooltip>
   );
 });
 
@@ -86,12 +97,12 @@ const Symbol = (props: SymbolProps) => {
 
   return (
     <Skeleton
-      loading={ props.isLoading }
+      isLoaded={ !props.isLoading }
       display="inline-flex"
       alignItems="center"
       maxW="20%"
       ml={ 2 }
-      color="text.secondary"
+      color="text_secondary"
     >
       <div>(</div>
       <TruncatedTextTooltip label={ symbol }>
@@ -116,7 +127,7 @@ const Copy = (props: CopyProps) => {
   return (
     <EntityBase.Copy
       { ...props }
-      text={ props.token.address_hash }
+      text={ props.token.address }
     />
   );
 };
@@ -124,22 +135,24 @@ const Copy = (props: CopyProps) => {
 const Container = EntityBase.Container;
 
 export interface EntityProps extends EntityBase.EntityBaseProps {
-  token: Pick<TokenInfo, 'address_hash' | 'icon_url' | 'name' | 'symbol' | 'type'>;
+  token: Pick<TokenInfo, 'address' | 'icon_url' | 'name' | 'symbol' | 'type'>;
   noSymbol?: boolean;
   jointSymbol?: boolean;
   onlySymbol?: boolean;
 }
 
 const TokenEntity = (props: EntityProps) => {
-  const partsProps = distributeEntityProps(props);
-  const content = <Content { ...partsProps.content }/>;
+  const linkProps = _omit(props, [ 'className' ]);
+  const partsProps = _omit(props, [ 'className', 'onClick' ]);
 
   return (
-    <Container w="100%" { ...partsProps.container }>
-      <Icon { ...partsProps.icon }/>
-      { props.noLink ? content : <Link { ...partsProps.link }>{ content }</Link> }
-      <Symbol { ...partsProps.symbol }/>
-      <Copy { ...partsProps.copy }/>
+    <Container className={ props.className } w="100%">
+      <Icon { ...partsProps }/>
+      <Link { ...linkProps }>
+        <Content { ...partsProps }/>
+      </Link>
+      <Symbol { ...partsProps }/>
+      <Copy { ...partsProps }/>
     </Container>
   );
 };

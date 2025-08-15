@@ -1,14 +1,16 @@
-import { GridItem, Flex, Box } from '@chakra-ui/react';
+import { GridItem, Show, Flex } from '@chakra-ui/react';
 import React from 'react';
 
 import type { TokenTransfer } from 'types/api/tokenTransfer';
 
 import { route } from 'nextjs-routes';
 
-import { Link } from 'toolkit/chakra/link';
-import * as DetailedInfo from 'ui/shared/DetailedInfo/DetailedInfo';
+import DetailsInfoItem from 'ui/shared/DetailsInfoItem';
 import IconSvg from 'ui/shared/IconSvg';
-import TokenTransferSnippet from 'ui/shared/TokenTransferSnippet/TokenTransferSnippet';
+import LinkInternal from 'ui/shared/LinkInternal';
+
+import TxDetailsTokenTransfer from './TxDetailsTokenTransfer';
+
 interface Props {
   data: Array<TokenTransfer>;
   txHash: string;
@@ -38,34 +40,32 @@ const TxDetailsTokenTransfers = ({ data, txHash, isOverflow }: Props) => {
         }
 
         return (
-          <React.Fragment key={ type }>
-            <DetailedInfo.ItemLabel
-              hint={ hint }
+          <DetailsInfoItem
+            key={ type }
+            title={ title }
+            hint={ hint }
+            position="relative"
+          >
+            <Flex
+              flexDirection="column"
+              alignItems="flex-start"
+              rowGap={ 5 }
+              w="100%"
+              overflow="hidden"
             >
-              { title }
-            </DetailedInfo.ItemLabel>
-            <DetailedInfo.ItemValue position="relative">
-              <Flex
-                flexDirection="column"
-                alignItems="flex-start"
-                rowGap={ 5 }
-                w="100%"
-                overflow="hidden"
-              >
-                { items.map((item, index) => <TokenTransferSnippet key={ index } data={ item }/>) }
-              </Flex>
-            </DetailedInfo.ItemValue>
-          </React.Fragment>
+              { items.map((item, index) => <TxDetailsTokenTransfer key={ index } data={ item }/>) }
+            </Flex>
+          </DetailsInfoItem>
         );
       }) }
       { isOverflow && (
         <>
-          <Box hideBelow="lg"><GridItem></GridItem></Box>
+          <Show above="lg" ssr={ false }><GridItem></GridItem></Show>
           <GridItem fontSize="sm" alignItems="center" display="inline-flex" pl={{ base: '28px', lg: 0 }}>
             <IconSvg name="token" boxSize={ 6 }/>
-            <Link href={ viewAllUrl }>
+            <LinkInternal href={ viewAllUrl }>
               View all
-            </Link>
+            </LinkInternal>
           </GridItem>
         </>
       ) }

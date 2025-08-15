@@ -1,25 +1,17 @@
-import { Box, Text } from '@chakra-ui/react';
+import { Box, Button, Text } from '@chakra-ui/react';
 import React from 'react';
 
 import { route } from 'nextjs-routes';
 
-import config from 'configs/app';
-import getErrorCause from 'lib/errors/getErrorCause';
 import getErrorCauseStatusCode from 'lib/errors/getErrorCauseStatusCode';
 import getErrorObjStatusCode from 'lib/errors/getErrorObjStatusCode';
-import getErrorProp from 'lib/errors/getErrorProp';
 import getResourceErrorPayload from 'lib/errors/getResourceErrorPayload';
-import { Button } from 'toolkit/chakra/button';
-import { Link } from 'toolkit/chakra/link';
-import AdBannerContent from 'ui/shared/ad/AdBannerContent';
 
 import AppErrorIcon from './AppErrorIcon';
 import AppErrorTitle from './AppErrorTitle';
 import AppErrorBlockConsensus from './custom/AppErrorBlockConsensus';
+import AppErrorInvalidTxHash from './custom/AppErrorInvalidTxHash';
 import AppErrorTooManyRequests from './custom/AppErrorTooManyRequests';
-import AppErrorTxNotFound from './custom/AppErrorTxNotFound';
-
-const adBannerConfig = config.features.adsBanner;
 
 interface Props {
   className?: string;
@@ -27,10 +19,6 @@ interface Props {
 }
 
 const ERROR_TEXTS: Record<string, { title: string; text: string }> = {
-  '403': {
-    title: 'Alert',
-    text: 'Access to this resource is restricted.',
-  },
   '404': {
     title: 'Page not found',
     text: 'This page is no longer explorable! If you are lost, use the search bar to find what you are looking for.',
@@ -48,7 +36,6 @@ const ERROR_TEXTS: Record<string, { title: string; text: string }> = {
 const AppError = ({ error, className }: Props) => {
   const content = (() => {
     const resourceErrorPayload = getResourceErrorPayload(error);
-    const cause = getErrorCause(error);
     const messageInPayload =
           resourceErrorPayload &&
           typeof resourceErrorPayload === 'object' &&
@@ -56,13 +43,12 @@ const AppError = ({ error, className }: Props) => {
           typeof resourceErrorPayload.message === 'string' ?
             resourceErrorPayload.message :
             undefined;
-    const statusCode = getErrorCauseStatusCode(error) || getErrorObjStatusCode(error);
 
-    const isInvalidTxHash = cause && 'resource' in cause && cause.resource === 'general:tx' && statusCode === 404;
+    const isInvalidTxHash = error?.message?.includes('Invalid tx hash');
     const isBlockConsensus = messageInPayload?.includes('Block lost consensus');
 
     if (isInvalidTxHash) {
-      return <AppErrorTxNotFound/>;
+      return <AppErrorInvalidTxHash/>;
     }
 
     if (isBlockConsensus) {
@@ -76,35 +62,30 @@ const AppError = ({ error, className }: Props) => {
       return <AppErrorBlockConsensus hash={ hash }/>;
     }
 
+    const statusCode = getErrorCauseStatusCode(error) || getErrorObjStatusCode(error);
+
     switch (statusCode) {
       case 429: {
-        const rateLimits = getErrorProp(error, 'rateLimits');
-        const bypassOptions = typeof rateLimits === 'object' && rateLimits && 'bypassOptions' in rateLimits ? rateLimits.bypassOptions : undefined;
-        return <AppErrorTooManyRequests bypassOptions={ typeof bypassOptions === 'string' ? bypassOptions : undefined }/>;
+        return <AppErrorTooManyRequests/>;
       }
 
       default: {
         const { title, text } = ERROR_TEXTS[String(statusCode)] ?? ERROR_TEXTS[500];
 
-        const adBannerProvider = adBannerConfig.isEnabled ? adBannerConfig.provider : null;
-
         return (
           <>
             <AppErrorIcon statusCode={ statusCode }/>
             <AppErrorTitle title={ title }/>
-            <Text color="text.secondary" mt={ 3 }>{ text }</Text>
-            <Link
+            <Text variant="secondary" mt={ 3 }>{ text }</Text>
+            <Button
+              mt={ 8 }
+              size="lg"
+              variant="outline"
+              as="a"
               href={ route({ pathname: '/' }) }
-              asChild
             >
-              <Button
-                mt={ 8 }
-                variant="outline"
-              >
                 Back to home
-              </Button>
-            </Link>
-            { statusCode === 404 && adBannerProvider && <AdBannerContent mt={ 12 } provider={ adBannerProvider }/> }
+            </Button>
           </>
         );
       }

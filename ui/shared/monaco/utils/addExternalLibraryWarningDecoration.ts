@@ -2,8 +2,6 @@ import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 import type { SmartContractExternalLibrary } from 'types/api/contract';
 
-import sortByEndLineNumberAsc from './sortByEndLineNumberAsc';
-
 export default function addExternalLibraryWarningDecoration(model: monaco.editor.ITextModel, libraries: Array<SmartContractExternalLibrary>) {
   const options: monaco.editor.IModelDecorationOptions = {
     isWholeLine: true,
@@ -82,4 +80,16 @@ const getLibraryName = (model: monaco.editor.ITextModel) => (library: SmartContr
   }
 
   return libraryName;
+};
+
+const sortByEndLineNumberAsc = (a: monaco.editor.FindMatch, b: monaco.editor.FindMatch) => {
+  if (a.range.endLineNumber < b.range.endLineNumber) {
+    return -1;
+  }
+
+  if (a.range.endLineNumber > b.range.endLineNumber) {
+    return 1;
+  }
+
+  return 0;
 };

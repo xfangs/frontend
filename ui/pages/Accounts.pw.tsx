@@ -1,43 +1,51 @@
+import { test, expect } from '@playwright/experimental-ct-react';
 import React from 'react';
 
 import type { AddressesResponse } from 'types/api/addresses';
 
 import * as addressMocks from 'mocks/address/address';
-import { test, expect } from 'playwright/lib';
+import TestApp from 'playwright/TestApp';
+import buildApiUrl from 'playwright/utils/buildApiUrl';
 
 import Accounts from './Accounts';
+
+const ADDRESSES_API_URL = buildApiUrl('addresses');
 
 const addresses: AddressesResponse = {
   items: [
     {
       ...addressMocks.withName,
-      transactions_count: '1',
+      tx_count: '1',
       coin_balance: '12345678901234567890000',
-    },
-    {
+    }, {
       ...addressMocks.token,
-      transactions_count: '109123890123',
+      tx_count: '109123890123',
       coin_balance: '22222345678901234567890000',
-      ens_domain_name: null,
-    },
-    {
+    }, {
       ...addressMocks.withoutName,
-      transactions_count: '11',
+      tx_count: '11',
       coin_balance: '1000000000000000000',
-    },
-    {
-      ...addressMocks.eoa,
-      transactions_count: '420',
-      coin_balance: '123456',
     },
   ],
   total_supply: '25222000',
   next_page_params: null,
 };
 
-test('base view +@mobile +@dark-mode', async({ render, mockTextAd, mockApiResponse }) => {
-  await mockTextAd();
-  await mockApiResponse('general:addresses', addresses);
-  const component = await render(<Accounts/>);
+test('base view +@mobile +@dark-mode', async({ mount, page }) => {
+  await page.route(ADDRESSES_API_URL, (route) => route.fulfill({
+    status: 200,
+    body: JSON.stringify(addresses),
+  }));
+  await page.route('https://request-global.czilladx.com/serve/native.php?z=19260bf627546ab7242', (route) => route.fulfill({
+    status: 200,
+    body: '',
+  }));
+
+  const component = await mount(
+    <TestApp>
+      <Accounts/>
+    </TestApp>,
+  );
+
   await expect(component).toHaveScreenshot();
 });

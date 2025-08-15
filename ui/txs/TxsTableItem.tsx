@@ -1,22 +1,32 @@
-import { VStack } from '@chakra-ui/react';
+import {
+  Tr,
+  Td,
+  VStack,
+  Show,
+  Hide,
+  Flex,
+  Skeleton,
+  Box,
+} from '@chakra-ui/react';
+import { motion } from 'framer-motion';
 import React from 'react';
 
 import type { Transaction } from 'types/api/transaction';
 
 import config from 'configs/app';
-import { Badge } from 'toolkit/chakra/badge';
-import { TableCell, TableRow } from 'toolkit/chakra/table';
-import AddressFromTo from 'ui/shared/address/AddressFromTo';
+import useTimeAgoIncrement from 'lib/hooks/useTimeAgoIncrement';
+import Tag from 'ui/shared/chakra/Tag';
 import CurrencyValue from 'ui/shared/CurrencyValue';
+import AddressEntity from 'ui/shared/entities/address/AddressEntity';
 import BlockEntity from 'ui/shared/entities/block/BlockEntity';
 import TxEntity from 'ui/shared/entities/tx/TxEntity';
+import IconSvg from 'ui/shared/IconSvg';
+import InOutTag from 'ui/shared/InOutTag';
 import TxStatus from 'ui/shared/statusTag/TxStatus';
-import TimeWithTooltip from 'ui/shared/time/TimeWithTooltip';
-import TxFee from 'ui/shared/tx/TxFee';
+import TxFeeStability from 'ui/shared/tx/TxFeeStability';
 import TxWatchListTags from 'ui/shared/tx/TxWatchListTags';
 import TxAdditionalInfo from 'ui/txs/TxAdditionalInfo';
 
-import TxTranslationType from './TxTranslationType';
 import TxType from './TxType';
 
 type Props = {
@@ -25,98 +35,143 @@ type Props = {
   currentAddress?: string;
   enableTimeIncrement?: boolean;
   isLoading?: boolean;
-  animation?: string;
-};
+}
 
-const TxsTableItem = ({ tx, showBlockInfo, currentAddress, enableTimeIncrement, isLoading, animation }: Props) => {
+const TxsTableItem = ({ tx, showBlockInfo, currentAddress, enableTimeIncrement, isLoading }: Props) => {
   const dataTo = tx.to ? tx.to : tx.created_contract;
+  const isOut = Boolean(currentAddress && currentAddress === tx.from.hash);
+  const isIn = Boolean(currentAddress && currentAddress === dataTo?.hash);
+
+  const timeAgo = useTimeAgoIncrement(tx.timestamp, enableTimeIncrement);
+
+  const addressFrom = (
+    <AddressEntity
+      address={ tx.from }
+      isLoading={ isLoading }
+      noCopy={ isOut }
+      noLink={ isOut }
+      truncation="constant"
+      w="100%"
+      py="2px"
+    />
+  );
+
+  const addressTo = dataTo ? (
+    <AddressEntity
+      address={ dataTo }
+      isLoading={ isLoading }
+      truncation="constant"
+      noCopy={ isIn }
+      noLink={ isIn }
+      w="100%"
+      py="2px"
+    />
+  ) : '-';
 
   return (
-    <TableRow key={ tx.hash } animation={ animation }>
-      <TableCell pl={ 4 }>
+    <Tr
+      as={ motion.tr }
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transitionDuration="normal"
+      transitionTimingFunction="linear"
+      key={ tx.hash }
+    >
+      <Td pl={ 4 }>
         <TxAdditionalInfo tx={ tx } isLoading={ isLoading }/>
-      </TableCell>
-      <TableCell pr={ 4 }>
+      </Td>
+      <Td pr={ 4 }>
         <VStack alignItems="start" lineHeight="24px">
           <TxEntity
             hash={ tx.hash }
             isLoading={ isLoading }
-            fontWeight="bold"
+            fontWeight={ 700 }
             noIcon
             maxW="100%"
-            truncation="constant_long"
           />
-          <TimeWithTooltip
-            timestamp={ tx.timestamp }
-            enableIncrement={ enableTimeIncrement }
-            isLoading={ isLoading }
-            color="text.secondary"
-          />
+          { tx.timestamp && <Skeleton color="text_secondary" fontWeight="400" isLoaded={ !isLoading }><span>{ timeAgo }</span></Skeleton> }
         </VStack>
-      </TableCell>
-      <TableCell>
+      </Td>
+      <Td>
         <VStack alignItems="start">
-          { tx.translation ? (
-            <TxTranslationType
-              types={ tx.transaction_types }
-              isLoading={ isLoading || tx.translation.isLoading }
-              translatationType={ tx.translation.data?.type }
-            />
-          ) :
-            <TxType types={ tx.transaction_types } isLoading={ isLoading }/>
-          }
+          <TxType types={ tx.tx_types } isLoading={ isLoading }/>
           <TxStatus status={ tx.status } errorText={ tx.status === 'error' ? tx.result : undefined } isLoading={ isLoading }/>
           <TxWatchListTags tx={ tx } isLoading={ isLoading }/>
         </VStack>
-      </TableCell>
-      <TableCell whiteSpace="nowrap">
+      </Td>
+      <Td whiteSpace="nowrap">
         { tx.method && (
-          <Badge colorPalette={ tx.method === 'Multicall' ? 'teal' : 'gray' } loading={ isLoading } truncated>
-            <span>{ tx.method }</span>
-          </Badge>
+          <Tag colorScheme={ tx.method === 'Multicall' ? 'teal' : 'gray' } isLoading={ isLoading } isTruncated>
+            { tx.method }
+          </Tag>
         ) }
-      </TableCell>
+      </Td>
       { showBlockInfo && (
-        <TableCell>
-          { tx.block_number && (
+        <Td>
+          { tx.block && (
             <BlockEntity
               isLoading={ isLoading }
-              number={ tx.block_number }
+              number={ tx.block }
               noIcon
-              textStyle="sm"
+              fontSize="sm"
+              lineHeight={ 6 }
               fontWeight={ 500 }
             />
           ) }
-        </TableCell>
+        </Td>
       ) }
-      <TableCell>
-        <AddressFromTo
-          from={ tx.from }
-          to={ dataTo }
-          current={ currentAddress }
-          isLoading={ isLoading }
-          mt="2px"
-          mode="compact"
-        />
-      </TableCell>
+      <Show above="xl" ssr={ false }>
+        <Td>
+          { addressFrom }
+        </Td>
+        <Td px={ 0 }>
+          { (isIn || isOut) ?
+            <InOutTag isIn={ isIn } isOut={ isOut } width="48px" mr={ 2 } isLoading={ isLoading }/> : (
+              <Box mx="6px">
+                <IconSvg name="arrows/east" boxSize={ 6 } color="gray.500" isLoading={ isLoading }/>
+              </Box>
+            ) }
+        </Td>
+        <Td>
+          { addressTo }
+        </Td>
+      </Show>
+      <Hide above="xl" ssr={ false }>
+        <Td colSpan={ 3 }>
+          <Flex alignItems="center">
+            { (isIn || isOut) ?
+              <InOutTag isIn={ isIn } isOut={ isOut } width="48px" isLoading={ isLoading }/> : (
+                <IconSvg
+                  name="arrows/east"
+                  boxSize={ 6 }
+                  color="gray.500"
+                  transform="rotate(90deg)"
+                  isLoading={ isLoading }
+                />
+              ) }
+            <VStack alignItems="start" overflow="hidden" ml={ 1 }>
+              { addressFrom }
+              { addressTo }
+            </VStack>
+          </Flex>
+        </Td>
+      </Hide>
       { !config.UI.views.tx.hiddenFields?.value && (
-        <TableCell isNumeric>
-          <CurrencyValue value={ tx.value } accuracy={ 8 } isLoading={ isLoading } wordBreak="break-word"/>
-        </TableCell>
+        <Td isNumeric>
+          <CurrencyValue value={ tx.value } accuracy={ 8 } isLoading={ isLoading }/>
+        </Td>
       ) }
       { !config.UI.views.tx.hiddenFields?.tx_fee && (
-        <TableCell isNumeric maxW="220px">
-          <TxFee
-            tx={ tx }
-            accuracy={ 8 }
-            isLoading={ isLoading }
-            withCurrency={ Boolean(tx.celo || tx.stability_fee) }
-            justifyContent="end"
-            wordBreak="break-word"
-          />
-        </TableCell>
+        <Td isNumeric>
+          { /* eslint-disable-next-line no-nested-ternary */ }
+          { tx.stability_fee ? (
+            <TxFeeStability data={ tx.stability_fee } isLoading={ isLoading } accuracy={ 8 } justifyContent="end" hideUsd/>
+          ) : (
+            tx.fee.value ? <CurrencyValue value={ tx.fee.value } accuracy={ 8 } isLoading={ isLoading }/> : '-'
+          ) }
+        </Td>
       ) }
-    </TableRow>
+    </Tr>
   );
 };
 

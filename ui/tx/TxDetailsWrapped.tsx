@@ -5,15 +5,15 @@ import React from 'react';
 import type { Transaction } from 'types/api/transaction';
 import type { ExcludeUndefined } from 'types/utils';
 
-import { currencyUnits } from 'lib/units';
-import { Badge } from 'toolkit/chakra/badge';
+import config from 'configs/app';
+import Tag from 'ui/shared/chakra/Tag';
 import CurrencyValue from 'ui/shared/CurrencyValue';
-import * as DetailedInfo from 'ui/shared/DetailedInfo/DetailedInfo';
+import DetailsInfoItem from 'ui/shared/DetailsInfoItem';
+import DetailsInfoItemDivider from 'ui/shared/DetailsInfoItemDivider';
 import AddressEntity from 'ui/shared/entities/address/AddressEntity';
 import TxEntity from 'ui/shared/entities/tx/TxEntity';
 import LogDecodedInputData from 'ui/shared/logs/LogDecodedInputData';
 import RawInputData from 'ui/shared/RawInputData';
-import TxFee from 'ui/shared/tx/TxFee';
 import TxDetailsGasPrice from 'ui/tx/details/TxDetailsGasPrice';
 import TxDetailsOther from 'ui/tx/details/TxDetailsOther';
 
@@ -24,110 +24,85 @@ interface Props {
 const TxDetailsWrapped = ({ data }: Props) => {
   return (
     <Grid columnGap={ 8 } rowGap={{ base: 3, lg: 3 }} templateColumns={{ base: 'minmax(0, 1fr)', lg: 'auto minmax(0, 1fr)' }}>
-      <DetailedInfo.ItemLabel
+      <DetailsInfoItem
+        title="Transaction hash"
         hint="Unique character string (TxID) assigned to every verified transaction"
+        flexWrap="nowrap"
       >
-        Transaction hash
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue flexWrap="nowrap">
         <TxEntity hash={ data.hash } noIcon noLink noCopy={ false }/>
-      </DetailedInfo.ItemValue>
-
-      <DetailedInfo.ItemLabel
+      </DetailsInfoItem>
+      <DetailsInfoItem
+        title="Method"
         hint="Transaction method name"
       >
-        Method
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue>
-        <Badge colorPalette="gray">
+        <Tag colorScheme="gray">
           { data.method }
-        </Badge>
-      </DetailedInfo.ItemValue>
+        </Tag>
+      </DetailsInfoItem>
 
-      <DetailedInfo.ItemDivider/>
+      <DetailsInfoItemDivider/>
 
-      { data.to && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Address (external or contract) receiving the transaction"
-          >
-            { data.to.is_contract ? 'Interacted with contract' : 'To' }
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue>
-            <Flex flexWrap="nowrap" alignItems="center" maxW="100%">
-              <AddressEntity address={ data.to }/>
-            </Flex>
-          </DetailedInfo.ItemValue>
-        </>
-      ) }
+      <DetailsInfoItem
+        title={ data.to?.is_contract ? 'Interacted with contract' : 'To' }
+        hint="Address (external or contract) receiving the transaction"
+        flexWrap={{ base: 'wrap', lg: 'nowrap' }}
+        columnGap={ 3 }
+      >
+        <Flex flexWrap="nowrap" alignItems="center" maxW="100%">
+          <AddressEntity address={ data.to }/>
+        </Flex>
+      </DetailsInfoItem>
 
-      <DetailedInfo.ItemDivider/>
+      <DetailsInfoItemDivider/>
 
-      <DetailedInfo.ItemLabel
+      <DetailsInfoItem
+        title="Value"
         hint="Value sent in the native token (and USD) if applicable"
       >
-        Value
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue>
         <CurrencyValue
           value={ data.value }
-          currency={ currencyUnits.ether }
+          currency={ config.chain.currency.symbol }
           flexWrap="wrap"
         />
-      </DetailedInfo.ItemValue>
-
+      </DetailsInfoItem>
       { data.fee.value !== null && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Total transaction fee"
-          >
-            Transaction fee
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue>
-            <TxFee tx={ data } withUsd/>
-          </DetailedInfo.ItemValue>
-        </>
+        <DetailsInfoItem
+          title="Transaction fee"
+          hint="Total transaction fee"
+        >
+          <CurrencyValue
+            value={ data.fee.value }
+            currency={ config.chain.currency.symbol }
+            flexWrap="wrap"
+          />
+        </DetailsInfoItem>
       ) }
-
       <TxDetailsGasPrice gasPrice={ data.gas_price }/>
-
       { data.gas_limit && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Maximum amount of gas that can be used by the transaction"
-          >
-            Gas limit
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue>
-            { BigNumber(data.gas_limit).toFormat() }
-          </DetailedInfo.ItemValue>
-        </>
+        <DetailsInfoItem
+          title="Gas limit"
+          hint="Maximum amount of gas that can be used by the transaction"
+        >
+          { BigNumber(data.gas_limit).toFormat() }
+        </DetailsInfoItem>
       ) }
 
-      <DetailedInfo.ItemDivider/>
+      <DetailsInfoItemDivider/>
 
       <TxDetailsOther type={ data.type } nonce={ data.nonce } position={ null }/>
-
-      <DetailedInfo.ItemLabel
+      <DetailsInfoItem
+        title="Raw input"
         hint="Binary data included with the transaction. See logs tab for additional info"
       >
-        Raw input
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue>
         <RawInputData hex={ data.raw_input }/>
-      </DetailedInfo.ItemValue>
-
+      </DetailsInfoItem>
       { data.decoded_input && (
-        <>
-          <DetailedInfo.ItemLabel
-            hint="Decoded input data"
-          >
-            Decoded input data
-          </DetailedInfo.ItemLabel>
-          <DetailedInfo.ItemValue>
-            <LogDecodedInputData data={ data.decoded_input }/>
-          </DetailedInfo.ItemValue>
-        </>
+        <DetailsInfoItem
+          title="Decoded input data"
+          hint="Decoded input data"
+        >
+          <LogDecodedInputData data={ data.decoded_input }/>
+        </DetailsInfoItem>
       ) }
     </Grid>
   );

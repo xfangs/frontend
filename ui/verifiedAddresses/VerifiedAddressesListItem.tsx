@@ -1,12 +1,9 @@
+import { IconButton, Link, Skeleton, Tooltip } from '@chakra-ui/react';
 import React from 'react';
 
 import type { TokenInfoApplication, VerifiedAddress } from 'types/api/account';
 
 import dayjs from 'lib/date/dayjs';
-import { IconButton } from 'toolkit/chakra/icon-button';
-import { Link } from 'toolkit/chakra/link';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { Tooltip } from 'toolkit/chakra/tooltip';
 import AddressEntity from 'ui/shared/entities/address/AddressEntity';
 import TokenEntity from 'ui/shared/entities/token/TokenEntity';
 import IconSvg from 'ui/shared/IconSvg';
@@ -39,7 +36,7 @@ const VerifiedAddressesListItem = ({ item, application, onAdd, onEdit, isLoading
 
   const tokenInfo = (() => {
     if (isLoading) {
-      return <Skeleton loading height={ 6 } width="140px"/>;
+      return <Skeleton height={ 6 } width="140px"/>;
     }
 
     if (!item.metadata.tokenName) {
@@ -51,9 +48,8 @@ const VerifiedAddressesListItem = ({ item, application, onAdd, onEdit, isLoading
     }
 
     const token = {
-      type: 'ERC-20' as const,
       icon_url: application.iconUrl,
-      address_hash: application.tokenAddress,
+      address: application.tokenAddress,
       name: item.metadata.tokenName,
       symbol: '',
     };
@@ -66,16 +62,16 @@ const VerifiedAddressesListItem = ({ item, application, onAdd, onEdit, isLoading
           noCopy
           noSymbol
         />
-        <Tooltip content="Edit" disabled={ isLoading } disableOnMobile>
+        <Tooltip label="Edit">
           <IconButton
             aria-label="edit"
-            variant="link"
-            size="2xs"
+            variant="simple"
+            boxSize={ 5 }
             borderRadius="none"
+            flexShrink={ 0 }
             onClick={ handleEditClick }
-          >
-            <IconSvg name="edit"/>
-          </IconButton>
+            icon={ <IconSvg name="edit" boxSize={ 4 } flexShrink={ 0 }/> }
+          />
         </Tooltip>
       </>
     );
@@ -86,7 +82,7 @@ const VerifiedAddressesListItem = ({ item, application, onAdd, onEdit, isLoading
       <ListItemMobileGrid.Label isLoading={ isLoading }>Address</ListItemMobileGrid.Label>
       <ListItemMobileGrid.Value>
         <AddressEntity
-          address={{ hash: item.contractAddress, is_contract: true }}
+          address={{ hash: item.contractAddress, is_contract: true, implementation_name: null }}
           isLoading={ isLoading }
           w="100%"
         />
@@ -105,7 +101,7 @@ const VerifiedAddressesListItem = ({ item, application, onAdd, onEdit, isLoading
         <>
           <ListItemMobileGrid.Label isLoading={ isLoading }>Status</ListItemMobileGrid.Label>
           <ListItemMobileGrid.Value>
-            <Skeleton loading={ isLoading } display="inline-block">
+            <Skeleton isLoaded={ !isLoading } display="inline-block">
               <VerifiedAddressesStatus status={ application.status }/>
             </Skeleton>
           </ListItemMobileGrid.Value>
@@ -116,7 +112,7 @@ const VerifiedAddressesListItem = ({ item, application, onAdd, onEdit, isLoading
         <>
           <ListItemMobileGrid.Label isLoading={ isLoading }>Date</ListItemMobileGrid.Label>
           <ListItemMobileGrid.Value>
-            <Skeleton loading={ isLoading } display="inline-block">
+            <Skeleton isLoaded={ !isLoading } display="inline-block">
               { dayjs(application.updatedAt).format('MMM DD, YYYY') }
             </Skeleton>
           </ListItemMobileGrid.Value>

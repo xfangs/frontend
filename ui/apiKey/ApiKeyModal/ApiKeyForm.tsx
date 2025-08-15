@@ -1,8 +1,15 @@
-import { Box } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  useColorModeValue,
+} from '@chakra-ui/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useCallback } from 'react';
-import type { SubmitHandler } from 'react-hook-form';
-import { useForm, FormProvider } from 'react-hook-form';
+import type { SubmitHandler, ControllerRenderProps } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 
 import type { ApiKey, ApiKeys, ApiKeyErrors } from 'types/api/account';
 
@@ -10,24 +17,23 @@ import type { ResourceErrorAccount } from 'lib/api/resources';
 import { resourceKey } from 'lib/api/resources';
 import useApiFetch from 'lib/api/useApiFetch';
 import getErrorMessage from 'lib/getErrorMessage';
-import { Button } from 'toolkit/chakra/button';
-import { FormFieldText } from 'toolkit/components/forms/fields/FormFieldText';
+import InputPlaceholder from 'ui/shared/InputPlaceholder';
 
 type Props = {
   data?: ApiKey;
-  onOpenChange: ({ open }: { open: boolean }) => void;
+  onClose: () => void;
   setAlertVisible: (isAlertVisible: boolean) => void;
-};
+}
 
 type Inputs = {
   token: string;
   name: string;
-};
+}
 
 const NAME_MAX_LENGTH = 255;
 
-const ApiKeyForm: React.FC<Props> = ({ data, onOpenChange, setAlertVisible }) => {
-  const formApi = useForm<Inputs>({
+const ApiKeyForm: React.FC<Props> = ({ data, onClose, setAlertVisible }) => {
+  const { control, handleSubmit, formState: { errors, isDirty }, setError } = useForm<Inputs>({
     mode: 'onTouched',
     defaultValues: {
       token: data?.api_key || '',
@@ -36,26 +42,27 @@ const ApiKeyForm: React.FC<Props> = ({ data, onOpenChange, setAlertVisible }) =>
   });
   const apiFetch = useApiFetch();
   const queryClient = useQueryClient();
+  const formBackgroundColor = useColorModeValue('white', 'gray.900');
 
   const updateApiKey = (data: Inputs) => {
     const body = { name: data.name };
 
     if (!data.token) {
-      return apiFetch('general:api_keys', { fetchParams: { method: 'POST', body } });
+      return apiFetch('api_keys', { fetchParams: { method: 'POST', body } });
     }
 
-    return apiFetch('general:api_keys', {
+    return apiFetch('api_keys', {
       pathParams: { id: data.token },
       fetchParams: { method: 'PUT', body },
     });
   };
 
-  const { mutateAsync, isPending } = useMutation({
+  const mutation = useMutation({
     mutationFn: updateApiKey,
     onSuccess: async(data) => {
       const response = data as unknown as ApiKey;
 
-      queryClient.setQueryData([ resourceKey('general:api_keys') ], (prevData: ApiKeys | undefined) => {
+      queryClient.setQueryData([ resourceKey('api_keys') ], (prevData: ApiKeys | undefined) => {
         const isExisting = prevData && prevData.some((item) => item.api_key === response.api_key);
 
         if (isExisting) {
@@ -71,57 +78,83 @@ const ApiKeyForm: React.FC<Props> = ({ data, onOpenChange, setAlertVisible }) =>
         return [ response, ...(prevData || []) ];
       });
 
-      onOpenChange({ open: false });
+      onClose();
     },
     onError: (error: ResourceErrorAccount<ApiKeyErrors>) => {
       const errorMap = error.payload?.errors;
       if (errorMap?.name) {
-        formApi.setError('name', { type: 'custom', message: getErrorMessage(errorMap, 'name') });
+        setError('name', { type: 'custom', message: getErrorMessage(errorMap, 'name') });
       } else if (errorMap?.identity_id) {
-        formApi.setError('name', { type: 'custom', message: getErrorMessage(errorMap, 'identity_id') });
+        setError('name', { type: 'custom', message: getErrorMessage(errorMap, 'identity_id') });
       } else {
         setAlertVisible(true);
       }
     },
   });
 
-  const onSubmit: SubmitHandler<Inputs> = useCallback(async(data) => {
+  const onSubmit: SubmitHandler<Inputs> = useCallback((data) => {
     setAlertVisible(false);
-    await mutateAsync(data);
-  }, [ mutateAsync, setAlertVisible ]);
+    mutation.mutate(data);
+  }, [ mutation, setAlertVisible ]);
+
+  const renderTokenInput = useCallback(({ field }: {field: ControllerRenderProps<Inputs, 'token'>}) => {
+    return (
+      <FormControl variant="floating" id="address">
+        <Input
+          { ...field }
+          isDisabled={ true }
+        />
+        <FormLabel data-in-modal="true">Auto-generated API key token</FormLabel>
+      </FormControl>
+    );
+  }, []);
+
+  const renderNameInput = useCallback(({ field }: {field: ControllerRenderProps<Inputs, 'name'>}) => {
+    return (
+      <FormControl variant="floating" id="name" isRequired backgroundColor={ formBackgroundColor }>
+        <Input
+          { ...field }
+          isInvalid={ Boolean(errors.name) }
+          maxLength={ NAME_MAX_LENGTH }
+        />
+        <InputPlaceholder text="Application name for API key (e.g Web3 project)" error={ errors.name }/>
+      </FormControl>
+    );
+  }, [ errors, formBackgroundColor ]);
 
   return (
-    <FormProvider { ...formApi }>
-      <form noValidate onSubmit={ formApi.handleSubmit(onSubmit) }>
-        { data && (
-          <FormFieldText<Inputs>
+    <form noValidate onSubmit={ handleSubmit(onSubmit) }>
+      { data && (
+        <Box marginBottom={ 5 }>
+          <Controller
             name="token"
-            placeholder="Auto-generated API key token"
-            readOnly
-            mb={ 5 }
+            control={ control }
+            render={ renderTokenInput }
           />
-        ) }
-        <FormFieldText<Inputs>
+        </Box>
+      ) }
+      <Box marginBottom={ 8 }>
+        <Controller
           name="name"
-          placeholder="Application name for API key (e.g Web3 project)"
-          required
+          control={ control }
           rules={{
             maxLength: NAME_MAX_LENGTH,
+            required: true,
           }}
-          bgColor="dialog.bg"
-          mb={ 8 }
+          render={ renderNameInput }
         />
-        <Box marginTop={ 8 }>
-          <Button
-            type="submit"
-            disabled={ !formApi.formState.isDirty }
-            loading={ isPending }
-          >
-            { data ? 'Save' : 'Generate API key' }
-          </Button>
-        </Box>
-      </form>
-    </FormProvider>
+      </Box>
+      <Box marginTop={ 8 }>
+        <Button
+          size="lg"
+          type="submit"
+          isDisabled={ !isDirty }
+          isLoading={ mutation.isPending }
+        >
+          { data ? 'Save' : 'Generate API key' }
+        </Button>
+      </Box>
+    </form>
   );
 };
 

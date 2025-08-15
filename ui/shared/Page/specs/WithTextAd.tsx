@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Badge } from 'toolkit/chakra/badge';
+import Tag from 'ui/shared/chakra/Tag';
 
 import PageTitle from '../PageTitle';
 
@@ -14,7 +14,7 @@ const WithTextAd = () => {
     <PageTitle
       title="Block"
       backLink={ backLink }
-      contentAfter={ <Badge key="custom" colorPalette="orange" variant="solid">Awesome</Badge> }
+      contentAfter={ <Tag key="custom" colorScheme="orange" variant="solid">Awesome</Tag> }
       withTextAd
     />
   );

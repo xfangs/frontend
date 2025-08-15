@@ -8,14 +8,14 @@
 
 // so i did it with js
 
-import { chakra } from '@chakra-ui/react';
-import { debounce } from 'es-toolkit';
+import type { As } from '@chakra-ui/react';
+import { Tooltip, chakra } from '@chakra-ui/react';
+import _debounce from 'lodash/debounce';
 import React, { useCallback, useEffect, useRef } from 'react';
 import type { FontFace } from 'use-font-face-observer';
 import useFontFaceObserver from 'use-font-face-observer';
 
-import { Tooltip } from 'toolkit/chakra/tooltip';
-import { BODY_TYPEFACE, HEADING_TYPEFACE } from 'toolkit/theme/foundations/typography';
+import { BODY_TYPEFACE, HEADING_TYPEFACE } from 'theme/foundations/typography';
 
 const TAIL_LENGTH = 4;
 const HEAD_MIN_LENGTH = 4;
@@ -23,13 +23,12 @@ const HEAD_MIN_LENGTH = 4;
 interface Props {
   hash: string;
   fontWeight?: string | number;
-  noTooltip?: boolean;
-  tooltipInteractive?: boolean;
+  isTooltipDisabled?: boolean;
   tailLength?: number;
-  as?: React.ElementType;
+  as?: As;
 }
 
-const HashStringShortenDynamic = ({ hash, fontWeight = '400', noTooltip, tailLength = TAIL_LENGTH, as = 'span', tooltipInteractive }: Props) => {
+const HashStringShortenDynamic = ({ hash, fontWeight = '400', isTooltipDisabled, tailLength = TAIL_LENGTH, as = 'span' }: Props) => {
   const elementRef = useRef<HTMLSpanElement>(null);
   const [ displayedString, setDisplayedString ] = React.useState(hash);
 
@@ -82,7 +81,7 @@ const HashStringShortenDynamic = ({ hash, fontWeight = '400', noTooltip, tailLen
   }, [ calculateString, isFontFaceLoaded ]);
 
   useEffect(() => {
-    const resizeHandler = debounce(calculateString, 100);
+    const resizeHandler = _debounce(calculateString, 100);
     const resizeObserver = new ResizeObserver(resizeHandler);
 
     resizeObserver.observe(document.body);
@@ -94,15 +93,9 @@ const HashStringShortenDynamic = ({ hash, fontWeight = '400', noTooltip, tailLen
   const content = <chakra.span ref={ elementRef } as={ as }>{ displayedString }</chakra.span>;
   const isTruncated = hash.length !== displayedString.length;
 
-  if (isTruncated && !noTooltip) {
+  if (isTruncated) {
     return (
-      <Tooltip
-        content={ hash }
-        contentProps={{ maxW: { base: 'calc(100vw - 8px)', lg: '400px' } }}
-        interactive={ tooltipInteractive }
-      >
-        { content }
-      </Tooltip>
+      <Tooltip label={ hash } isDisabled={ isTooltipDisabled } maxW={{ base: '100vw', lg: '400px' }}>{ content }</Tooltip>
     );
   }
 

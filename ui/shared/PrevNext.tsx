@@ -1,9 +1,6 @@
-import { Box, chakra, Flex } from '@chakra-ui/react';
+import { Box, IconButton, chakra, Tooltip, Flex, Skeleton } from '@chakra-ui/react';
 import React from 'react';
 
-import { IconButton } from 'toolkit/chakra/icon-button';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { Tooltip } from 'toolkit/chakra/tooltip';
 import IconSvg from 'ui/shared/IconSvg';
 
 interface Props {
@@ -28,38 +25,38 @@ const PrevNext = ({ className, onClick, prevLabel, nextLabel, isPrevDisabled, is
   if (isLoading) {
     return (
       <Flex columnGap="10px" className={ className }>
-        <Skeleton loading boxSize={ 6 } borderRadius="sm"/>
-        <Skeleton loading boxSize={ 6 } borderRadius="sm"/>
+        <Skeleton boxSize={ 6 } borderRadius="sm"/>
+        <Skeleton boxSize={ 6 } borderRadius="sm"/>
       </Flex>
     );
   }
 
   return (
-    <Box className={ className } display="flex">
-      <Tooltip content={ prevLabel }>
+    <Box className={ className }>
+      <Tooltip label={ prevLabel }>
         <IconButton
           aria-label="prev"
+          icon={ <IconSvg name="arrows/east-mini" boxSize={ 6 }/> }
+          h={ 6 }
           borderRadius="sm"
           variant="subtle"
-          boxSize={ 6 }
+          colorScheme="gray"
           onClick={ handelPrevClick }
-          disabled={ isPrevDisabled }
-        >
-          <IconSvg name="arrows/east-mini"/>
-        </IconButton>
+          isDisabled={ isPrevDisabled }
+        />
       </Tooltip>
-      <Tooltip content={ nextLabel }>
+      <Tooltip label={ nextLabel }>
         <IconButton
           aria-label="next"
+          icon={ <IconSvg name="arrows/east-mini" boxSize={ 6 } transform="rotate(180deg)"/> }
+          h={ 6 }
           borderRadius="sm"
           variant="subtle"
-          boxSize={ 6 }
+          colorScheme="gray"
           ml="10px"
           onClick={ handelNextClick }
-          disabled={ isNextDisabled }
-        >
-          <IconSvg name="arrows/east-mini" transform="rotate(180deg)"/>
-        </IconButton>
+          isDisabled={ isNextDisabled }
+        />
       </Tooltip>
     </Box>
   );

@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 
-import { ZERO } from 'toolkit/utils/consts';
+import { ZERO } from 'lib/consts';
 
 interface Params {
   value: string;

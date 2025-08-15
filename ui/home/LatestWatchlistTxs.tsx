@@ -5,9 +5,9 @@ import { route } from 'nextjs-routes';
 
 import useApiQuery from 'lib/api/useApiQuery';
 import useIsMobile from 'lib/hooks/useIsMobile';
+import useRedirectForInvalidAuthToken from 'lib/hooks/useRedirectForInvalidAuthToken';
 import { TX } from 'stubs/tx';
-import { Link } from 'toolkit/chakra/link';
-import useRedirectForInvalidAuthToken from 'ui/snippets/auth/useRedirectForInvalidAuthToken';
+import LinkInternal from 'ui/shared/LinkInternal';
 
 import LatestTxsItem from './LatestTxsItem';
 import LatestTxsItemMobile from './LatestTxsItemMobile';
@@ -16,14 +16,14 @@ const LatestWatchlistTxs = () => {
   useRedirectForInvalidAuthToken();
   const isMobile = useIsMobile();
   const txsCount = isMobile ? 2 : 6;
-  const { data, isPlaceholderData, isError } = useApiQuery('general:homepage_txs_watchlist', {
+  const { data, isPlaceholderData, isError } = useApiQuery('homepage_txs_watchlist', {
     queryOptions: {
       placeholderData: Array(txsCount).fill(TX),
     },
   });
 
   if (isError) {
-    return <Text mt={ 4 }>No data. Please reload the page.</Text>;
+    return <Text mt={ 4 }>No data. Please reload page.</Text>;
   }
 
   if (!data?.length) {
@@ -53,7 +53,7 @@ const LatestWatchlistTxs = () => {
           ))) }
         </Box>
         <Flex justifyContent="center">
-          <Link textStyle="sm" href={ txsUrl }>View all watch list transactions</Link>
+          <LinkInternal fontSize="sm" href={ txsUrl }>View all watch list transactions</LinkInternal>
         </Flex>
       </>
     );

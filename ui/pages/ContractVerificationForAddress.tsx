@@ -1,12 +1,10 @@
 import { useRouter } from 'next/router';
 import React from 'react';
 
-import type { SmartContractVerificationMethodApi } from 'types/api/contract';
-import type { SmartContractVerificationMethod } from 'types/client/contract';
+import type { SmartContractVerificationMethod } from 'types/api/contract';
 
 import useApiQuery from 'lib/api/useApiQuery';
 import { useAppContext } from 'lib/contexts/app';
-import throwOnResourceLoadError from 'lib/errors/throwOnResourceLoadError';
 import getQueryParamString from 'lib/router/getQueryParamString';
 import ContractVerificationForm from 'ui/contractVerification/ContractVerificationForm';
 import useFormConfigQuery from 'ui/contractVerification/useFormConfigQuery';
@@ -22,14 +20,16 @@ const ContractVerificationForAddress = () => {
   const hash = getQueryParamString(router.query.hash);
   const method = getQueryParamString(router.query.method) as SmartContractVerificationMethod;
 
-  const contractQuery = useApiQuery('general:contract', {
+  const contractQuery = useApiQuery('contract', {
     pathParams: { hash },
     queryOptions: {
       enabled: Boolean(hash),
     },
   });
 
-  throwOnResourceLoadError(contractQuery);
+  if (contractQuery.isError && contractQuery.error.status === 404) {
+    throw Error('Not found', { cause: contractQuery.error as unknown as Error });
+  }
 
   const configQuery = useFormConfigQuery(Boolean(hash));
 
@@ -60,7 +60,7 @@ const ContractVerificationForAddress = () => {
 
     return (
       <ContractVerificationForm
-        method={ method && configQuery.data.verification_options.includes(method) ? method as SmartContractVerificationMethodApi : undefined }
+        method={ method && configQuery.data.verification_options.includes(method) ? method : undefined }
         config={ configQuery.data }
         hash={ hash }
       />
@@ -87,12 +87,12 @@ const ContractVerificationForAddress = () => {
         backLink={ backLink }
       />
       <AddressEntity
-        address={{ hash, is_contract: true }}
+        address={{ hash, is_contract: true, implementation_name: null }}
         noLink
-        variant="subheading"
+        fontFamily="heading"
+        fontSize="lg"
+        fontWeight={ 500 }
         mb={ 12 }
-        w="min-content"
-        maxW="100%"
       />
       { content }
     </>

@@ -1,17 +1,28 @@
-import { chakra, Box } from '@chakra-ui/react';
+import {
+  chakra,
+  Alert,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalCloseButton,
+  ModalHeader,
+  ModalOverlay,
+  LightMode,
+  Box,
+  useDisclosure,
+  Tooltip,
+  IconButton,
+  Skeleton,
+} from '@chakra-ui/react';
+import * as Sentry from '@sentry/react';
 import { useRouter } from 'next/router';
 import QRCode from 'qrcode';
 import React from 'react';
 
+import type { Address as AddressType } from 'types/api/address';
+
 import getPageType from 'lib/mixpanel/getPageType';
 import * as mixpanel from 'lib/mixpanel/index';
-import { useRollbar } from 'lib/rollbar';
-import { Alert } from 'toolkit/chakra/alert';
-import { DialogBody, DialogContent, DialogHeader, DialogRoot } from 'toolkit/chakra/dialog';
-import { IconButton } from 'toolkit/chakra/icon-button';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { Tooltip } from 'toolkit/chakra/tooltip';
-import { useDisclosure } from 'toolkit/hooks/useDisclosure';
 import AddressEntity from 'ui/shared/entities/address/AddressEntity';
 import IconSvg from 'ui/shared/IconSvg';
 
@@ -21,15 +32,14 @@ const SVG_OPTIONS = {
 
 interface Props {
   className?: string;
-  hash: string;
+  address: AddressType;
   isLoading?: boolean;
 }
 
-const AddressQrCode = ({ hash, className, isLoading }: Props) => {
-  const { open, onOpen, onOpenChange } = useDisclosure();
+const AddressQrCode = ({ address, className, isLoading }: Props) => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const router = useRouter();
-  const rollbar = useRollbar();
 
   const [ qr, setQr ] = React.useState('');
   const [ error, setError ] = React.useState('');
@@ -37,11 +47,11 @@ const AddressQrCode = ({ hash, className, isLoading }: Props) => {
   const pageType = getPageType(router.pathname);
 
   React.useEffect(() => {
-    if (open) {
-      QRCode.toString(hash, SVG_OPTIONS, (error: Error | null | undefined, svg: string) => {
+    if (isOpen) {
+      QRCode.toString(address.hash, SVG_OPTIONS, (error: Error | null | undefined, svg: string) => {
         if (error) {
           setError('We were unable to generate QR code.');
-          rollbar?.warn('QR code generation failed');
+          Sentry.captureException(error, { tags: { source: 'qr_code' } });
           return;
         }
 
@@ -50,50 +60,58 @@ const AddressQrCode = ({ hash, className, isLoading }: Props) => {
         mixpanel.logEvent(mixpanel.EventTypes.QR_CODE, { 'Page type': pageType });
       });
     }
-  }, [ hash, open, pageType, rollbar ]);
+  }, [ address.hash, isOpen, onClose, pageType ]);
 
   if (isLoading) {
-    return <Skeleton loading className={ className } w="36px" h="32px" borderRadius="base"/>;
+    return <Skeleton className={ className } w="36px" h="32px" borderRadius="base"/>;
   }
 
   return (
     <>
-      <Tooltip content="Click to view QR code" disableOnMobile>
+      <Tooltip label="Click to view QR code">
         <IconButton
           className={ className }
           aria-label="Show QR code"
-          variant="icon_secondary"
-          size="md"
+          variant="outline"
+          size="sm"
+          pl="6px"
+          pr="6px"
           onClick={ onOpen }
-        >
-          <IconSvg name="qr_code"/>
-        </IconButton>
+          icon={ <IconSvg name="qr_code" boxSize={ 5 }/> }
+          flexShrink={ 0 }
+        />
       </Tooltip>
 
       { error && (
-        <DialogRoot open={ open } onOpenChange={ onOpenChange } size={{ lgDown: 'full', lg: 'sm' }}>
-          <DialogContent>
-            <DialogBody>
+        <Modal isOpen={ isOpen } onClose={ onClose } size={{ base: 'full', lg: 'sm' }}>
+          <ModalOverlay/>
+          <ModalContent>
+            <ModalBody mb={ 0 }>
               <Alert status="warning">{ error }</Alert>
-            </DialogBody>
-          </DialogContent>
-        </DialogRoot>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
       ) }
       { !error && (
-        <DialogRoot open={ open } onOpenChange={ onOpenChange } size={{ lgDown: 'full', lg: 'sm' }}>
-          <DialogContent className="light">
-            <DialogHeader>Address QR code</DialogHeader>
-            <DialogBody>
-              <AddressEntity
-                mb={ 3 }
-                fontWeight={ 500 }
-                address={{ hash }}
-                noLink
-              />
-              <Box p={ 4 } dangerouslySetInnerHTML={{ __html: qr }}/>
-            </DialogBody>
-          </DialogContent>
-        </DialogRoot>
+        <LightMode>
+          <Modal isOpen={ isOpen } onClose={ onClose } size={{ base: 'full', lg: 'sm' }}>
+            <ModalOverlay/>
+            <ModalContent>
+              <ModalHeader fontWeight="500" textStyle="h3" mb={ 4 }>Address QR code</ModalHeader>
+              <ModalCloseButton/>
+              <ModalBody mb={ 0 }>
+                <AddressEntity
+                  mb={ 3 }
+                  fontWeight={ 500 }
+                  color="text"
+                  address={ address }
+                  noLink
+                />
+                <Box p={ 4 } dangerouslySetInnerHTML={{ __html: qr }}/>
+              </ModalBody>
+            </ModalContent>
+          </Modal>
+        </LightMode>
       ) }
     </>
   );

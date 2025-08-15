@@ -1,33 +1,32 @@
-import { Box } from '@chakra-ui/react';
+import { Box, Show, Hide } from '@chakra-ui/react';
 import React from 'react';
 
-import type { TxsSocketType } from './socket/types';
 import type { AddressFromToFilter } from 'types/api/address';
 import type { Transaction, TransactionsSortingField, TransactionsSortingValue } from 'types/api/transaction';
-import type { PaginationParams } from 'ui/shared/pagination/types';
 
 import useIsMobile from 'lib/hooks/useIsMobile';
 import AddressCsvExportLink from 'ui/address/AddressCsvExportLink';
-import { ACTION_BAR_HEIGHT_DESKTOP } from 'ui/shared/ActionBar';
 import DataListDisplay from 'ui/shared/DataListDisplay';
+import type { QueryWithPagesResult } from 'ui/shared/pagination/useQueryWithPages';
+import * as SocketNewItemsNotice from 'ui/shared/SocketNewItemsNotice';
 import getNextSortValue from 'ui/shared/sort/getNextSortValue';
 
-import useDescribeTxs from './noves/useDescribeTxs';
 import TxsHeaderMobile from './TxsHeaderMobile';
-import TxsList from './TxsList';
+import TxsListItem from './TxsListItem';
 import TxsTable from './TxsTable';
 
-const SORT_SEQUENCE: Record<TransactionsSortingField, Array<TransactionsSortingValue>> = {
-  value: [ 'value-desc', 'value-asc', 'default' ],
-  fee: [ 'fee-desc', 'fee-asc', 'default' ],
-  block_number: [ 'block_number-asc', 'default' ],
+const SORT_SEQUENCE: Record<TransactionsSortingField, Array<TransactionsSortingValue | undefined>> = {
+  value: [ 'value-desc', 'value-asc', undefined ],
+  fee: [ 'fee-desc', 'fee-asc', undefined ],
 };
 
 type Props = {
-
-  pagination: PaginationParams;
+  // eslint-disable-next-line max-len
+  query: QueryWithPagesResult<'txs_validated' | 'txs_pending'> | QueryWithPagesResult<'txs_watchlist'> | QueryWithPagesResult<'block_txs'> | QueryWithPagesResult<'zkevm_l2_txn_batch_txs'>;
   showBlockInfo?: boolean;
-  socketType?: TxsSocketType;
+  showSocketInfo?: boolean;
+  socketInfoAlert?: string;
+  socketInfoNum?: number;
   currentAddress?: string;
   filter?: React.ReactNode;
   filterValue?: AddressFromToFilter;
@@ -36,16 +35,18 @@ type Props = {
   items?: Array<Transaction>;
   isPlaceholderData: boolean;
   isError: boolean;
-  setSorting: (value: TransactionsSortingValue) => void;
-  sort: TransactionsSortingValue;
-};
+  setSorting: (value: TransactionsSortingValue | undefined) => void;
+  sort: TransactionsSortingValue | undefined;
+}
 
 const TxsContent = ({
-  pagination,
+  query,
   filter,
   filterValue,
   showBlockInfo = true,
-  socketType,
+  showSocketInfo = true,
+  socketInfoAlert,
+  socketInfoNum,
   currentAddress,
   enableTimeIncrement,
   top,
@@ -57,38 +58,50 @@ const TxsContent = ({
 }: Props) => {
   const isMobile = useIsMobile();
 
-  const onSortToggle = React.useCallback((field: TransactionsSortingField) => {
+  const onSortToggle = React.useCallback((field: TransactionsSortingField) => () => {
     const value = getNextSortValue<TransactionsSortingField, TransactionsSortingValue>(SORT_SEQUENCE, field)(sort);
     setSorting(value);
   }, [ sort, setSorting ]);
 
-  const itemsWithTranslation = useDescribeTxs(items, currentAddress, isPlaceholderData);
-
-  const content = itemsWithTranslation ? (
+  const content = items ? (
     <>
-      <Box hideFrom="lg">
-        <TxsList
-          showBlockInfo={ showBlockInfo }
-          socketType={ socketType }
-          isLoading={ isPlaceholderData }
-          enableTimeIncrement={ enableTimeIncrement }
-          currentAddress={ currentAddress }
-          items={ itemsWithTranslation }
-        />
-      </Box>
-      <Box hideBelow="lg">
+      <Show below="lg" ssr={ false }>
+        <Box>
+          { showSocketInfo && (
+            <SocketNewItemsNotice.Mobile
+              url={ window.location.href }
+              num={ socketInfoNum }
+              alert={ socketInfoAlert }
+              isLoading={ isPlaceholderData }
+            />
+          ) }
+          { items.map((tx, index) => (
+            <TxsListItem
+              key={ tx.hash + (isPlaceholderData ? index : '') }
+              tx={ tx }
+              showBlockInfo={ showBlockInfo }
+              currentAddress={ currentAddress }
+              enableTimeIncrement={ enableTimeIncrement }
+              isLoading={ isPlaceholderData }
+            />
+          )) }
+        </Box>
+      </Show>
+      <Hide below="lg" ssr={ false }>
         <TxsTable
-          txs={ itemsWithTranslation }
-          sort={ sort }
-          onSortToggle={ onSortToggle }
+          txs={ items }
+          sort={ onSortToggle }
+          sorting={ sort }
           showBlockInfo={ showBlockInfo }
-          socketType={ socketType }
-          top={ top || (pagination.isVisible ? ACTION_BAR_HEIGHT_DESKTOP : 0) }
+          showSocketInfo={ showSocketInfo }
+          socketInfoAlert={ socketInfoAlert }
+          socketInfoNum={ socketInfoNum }
+          top={ top || query.pagination.isVisible ? 80 : 0 }
           currentAddress={ currentAddress }
           enableTimeIncrement={ enableTimeIncrement }
           isLoading={ isPlaceholderData }
         />
-      </Box>
+      </Hide>
     </>
   ) : null;
 
@@ -97,14 +110,14 @@ const TxsContent = ({
       mt={ -6 }
       sorting={ sort }
       setSorting={ setSorting }
-      paginationProps={ pagination }
-      showPagination={ pagination.isVisible }
+      paginationProps={ query.pagination }
+      showPagination={ query.pagination.isVisible }
       filterComponent={ filter }
       linkSlot={ currentAddress ? (
         <AddressCsvExportLink
           address={ currentAddress }
           params={{ type: 'transactions', filterType: 'address', filterValue }}
-          isLoading={ pagination.isLoading }
+          isLoading={ query.pagination.isLoading }
         />
       ) : null
       }
@@ -114,12 +127,11 @@ const TxsContent = ({
   return (
     <DataListDisplay
       isError={ isError }
-      itemsNum={ itemsWithTranslation?.length }
+      items={ items }
       emptyText="There are no transactions."
+      content={ content }
       actionBar={ actionBar }
-    >
-      { content }
-    </DataListDisplay>
+    />
   );
 };
 

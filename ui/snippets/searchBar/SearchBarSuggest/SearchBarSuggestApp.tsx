@@ -1,17 +1,14 @@
-import { Flex, Text } from '@chakra-ui/react';
-import { useRouter } from 'next/router';
+import { Image, Flex, Text, useColorModeValue } from '@chakra-ui/react';
+import NextLink from 'next/link';
 import React from 'react';
 
 import type { MarketplaceAppOverview } from 'types/client/marketplace';
 
-import { route } from 'nextjs-routes';
-
 import highlightText from 'lib/highlightText';
-import { useColorModeValue } from 'toolkit/chakra/color-mode';
-import { Image } from 'toolkit/chakra/image';
 import IconSvg from 'ui/shared/IconSvg';
 
 import SearchBarSuggestItemLink from './SearchBarSuggestItemLink';
+
 interface Props {
   data: MarketplaceAppOverview;
   isMobile: boolean | undefined;
@@ -20,7 +17,7 @@ interface Props {
 }
 
 const SearchBarSuggestApp = ({ data, isMobile, searchTerm, onClick }: Props) => {
-  const router = useRouter();
+
   const logo = (
     <Image
       borderRadius="base"
@@ -45,11 +42,17 @@ const SearchBarSuggestApp = ({ data, isMobile, searchTerm, onClick }: Props) => 
             >
               <span dangerouslySetInnerHTML={{ __html: highlightText(data.title, searchTerm) }}/>
             </Text>
-            { data.external && <IconSvg name="link_external" color="icon.externalLink" boxSize={ 3 } verticalAlign="middle" flexShrink={ 0 }/> }
+            { data.external && <IconSvg name="arrows/north-east" boxSize={ 4 } verticalAlign="middle" flexShrink={ 0 }/> }
           </Flex>
           <Text
-            color="text.secondary"
-            lineClamp={ 3 }
+            variant="secondary"
+            overflow="hidden"
+            textOverflow="ellipsis"
+            sx={{
+              display: '-webkit-box',
+              '-webkit-box-orient': 'vertical',
+              '-webkit-line-clamp': '3',
+            }}
           >
             { data.description }
           </Text>
@@ -70,7 +73,7 @@ const SearchBarSuggestApp = ({ data, isMobile, searchTerm, onClick }: Props) => 
           <span dangerouslySetInnerHTML={{ __html: highlightText(data.title, searchTerm) }}/>
         </Text>
         <Text
-          color="text.secondary"
+          variant="secondary"
           overflow="hidden"
           whiteSpace="nowrap"
           textOverflow="ellipsis"
@@ -78,27 +81,25 @@ const SearchBarSuggestApp = ({ data, isMobile, searchTerm, onClick }: Props) => 
         >
           { data.description }
         </Text>
-        { data.external && (
-          <IconSvg
-            name="link_external"
-            color="icon.externalLink"
-            boxSize={ 3 }
-            verticalAlign="middle"
-            flexShrink={ 0 }
-          />
-        ) }
+        { data.external && <IconSvg name="arrows/north-east" boxSize={ 4 } verticalAlign="middle" color="text_secondary" flexShrink={ 0 }/> }
       </Flex>
     );
   })();
 
+  if (data.external) {
+    return (
+      <SearchBarSuggestItemLink onClick={ onClick } href={ data.url } target="_blank">
+        { content }
+      </SearchBarSuggestItemLink>
+    );
+  }
+
   return (
-    <SearchBarSuggestItemLink
-      onClick={ onClick }
-      href={ data.external ? route({ pathname: '/apps', query: { selectedAppId: data.id } }) : route({ pathname: '/apps/[id]', query: { id: data.id } }) }
-      shallow={ data.external && router.pathname === '/apps' }
-    >
-      { content }
-    </SearchBarSuggestItemLink>
+    <NextLink href={{ pathname: '/apps/[id]', query: { id: data.id } }} passHref legacyBehavior>
+      <SearchBarSuggestItemLink onClick={ onClick }>
+        { content }
+      </SearchBarSuggestItemLink>
+    </NextLink>
   );
 };
 

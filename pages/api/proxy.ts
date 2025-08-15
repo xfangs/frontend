@@ -1,7 +1,8 @@
-import { pick, pickBy } from 'es-toolkit';
+import _pick from 'lodash/pick';
+import _pickBy from 'lodash/pickBy';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import fetchFactory from 'nextjs/utils/fetchProxy';
+import fetchFactory from 'nextjs/utils/fetch';
 
 import appConfig from 'configs/app';
 
@@ -13,32 +14,16 @@ const handler = async(nextReq: NextApiRequest, nextRes: NextApiResponse) => {
 
   const url = new URL(
     nextReq.url.replace(/^\/node-api\/proxy/, ''),
-    nextReq.headers['x-endpoint']?.toString() || appConfig.apis.general.endpoint,
+    nextReq.headers['x-endpoint']?.toString() || appConfig.api.endpoint,
   );
   const apiRes = await fetchFactory(nextReq)(
     url.toString(),
-    pickBy(pick(nextReq, [ 'body', 'method' ]), Boolean),
+    _pickBy(_pick(nextReq, [ 'body', 'method' ]), Boolean),
   );
 
   // proxy some headers from API
-  const HEADERS_TO_PROXY = [
-    'x-request-id',
-    'content-type',
-    'bypass-429-option',
-    'x-ratelimit-limit',
-    'x-ratelimit-remaining',
-    'x-ratelimit-reset',
-  ];
-
-  HEADERS_TO_PROXY.forEach((header) => {
-    const value = apiRes.headers.get(header);
-    value && nextRes.setHeader(header, value);
-  });
-
-  const setCookie = apiRes.headers.raw()['set-cookie'];
-  setCookie?.forEach((value) => {
-    nextRes.appendHeader('set-cookie', value);
-  });
+  nextRes.setHeader('x-request-id', apiRes.headers.get('x-request-id') || '');
+  nextRes.setHeader('set-cookie', apiRes.headers.get('set-cookie') || '');
 
   nextRes.status(apiRes.status).send(apiRes.body);
 };

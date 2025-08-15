@@ -1,22 +1,12 @@
 import type { Feature } from './types';
-import type { Provider } from 'types/client/txInterpretation';
-import { PROVIDERS } from 'types/client/txInterpretation';
 
 import { getEnvValue } from '../utils';
 
 const title = 'Transaction interpretation';
 
-const provider: Provider = (() => {
-  const value = getEnvValue('NEXT_PUBLIC_TRANSACTION_INTERPRETATION_PROVIDER');
+const provider = getEnvValue('NEXT_PUBLIC_TRANSACTION_INTERPRETATION_PROVIDER') || 'none';
 
-  if (value && PROVIDERS.includes(value as Provider)) {
-    return value as Provider;
-  }
-
-  return 'none';
-})();
-
-const config: Feature<{ provider: Provider }> = (() => {
+const config: Feature<{ provider: string }> = (() => {
   if (provider !== 'none') {
     return Object.freeze({
       title,

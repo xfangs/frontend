@@ -7,7 +7,7 @@ export interface Log {
   data: string;
   index: number;
   decoded: DecodedInput | null;
-  transaction_hash: string | null;
+  tx_hash: string | null;
 }
 
 export interface LogsResponseTx {

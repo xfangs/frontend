@@ -1,38 +1,40 @@
+import { chakra, useColorModeValue } from '@chakra-ui/react';
 import React from 'react';
 
-import type { LinkProps } from 'toolkit/chakra/link';
-import { Link } from 'toolkit/chakra/link';
+type Props = {
+  onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void;
+  href?: string;
+  target?: string;
+  children: React.ReactNode;
+}
 
-interface Props extends LinkProps {};
-
-const SearchBarSuggestItemLink = React.forwardRef<HTMLAnchorElement, Props>(({ children, ...rest }, ref) => {
+const SearchBarSuggestItemLink = ({ onClick, href, target, children }: Props) => {
   return (
-    <Link
-      ref={ ref }
+    <chakra.a
       py={ 3 }
       px={ 1 }
       display="flex"
       flexDir="column"
-      alignItems="stretch"
-      variant="plain"
       rowGap={ 2 }
-      borderColor="border.divider"
+      borderColor="divider"
       borderBottomWidth="1px"
       _last={{
         borderBottomWidth: '0',
       }}
       _hover={{
-        bgColor: { _light: 'blue.50', _dark: 'gray.800' },
+        bgColor: useColorModeValue('blue.50', 'gray.800'),
       }}
-      textStyle="sm"
+      fontSize="sm"
       _first={{
         mt: 2,
       }}
-      { ...rest }
+      onClick={ onClick }
+      href={ href }
+      target={ target }
     >
       { children }
-    </Link>
+    </chakra.a>
   );
-});
+};
 
 export default SearchBarSuggestItemLink;

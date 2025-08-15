@@ -1,4 +1,5 @@
-import { stripLeadingSlash, stripTrailingSlash } from 'toolkit/utils/url';
+import stripLeadingSlash from 'lib/stripLeadingSlash';
+import stripTrailingSlash from 'lib/stripTrailingSlash';
 
 // FIXME support multiline imports - https://base-goerli.blockscout.com/address/0x3442844D5d4938CA70f8C227dB88F6069C0b82A9?tab=contract
 

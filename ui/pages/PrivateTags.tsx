@@ -1,14 +1,14 @@
 import React from 'react';
 
-import type { TabItemRegular } from 'toolkit/components/AdaptiveTabs/types';
+import type { RoutedTab } from 'ui/shared/Tabs/types';
 
-import RoutedTabs from 'toolkit/components/RoutedTabs/RoutedTabs';
+import useRedirectForInvalidAuthToken from 'lib/hooks/useRedirectForInvalidAuthToken';
 import PrivateAddressTags from 'ui/privateTags/PrivateAddressTags';
 import PrivateTransactionTags from 'ui/privateTags/PrivateTransactionTags';
 import PageTitle from 'ui/shared/Page/PageTitle';
-import useRedirectForInvalidAuthToken from 'ui/snippets/auth/useRedirectForInvalidAuthToken';
+import RoutedTabs from 'ui/shared/Tabs/RoutedTabs';
 
-const TABS: Array<TabItemRegular> = [
+const TABS: Array<RoutedTab> = [
   { id: 'address', title: 'Address', component: <PrivateAddressTags/> },
   { id: 'tx', title: 'Transaction', component: <PrivateTransactionTags/> },
 ];

@@ -1,5 +1,11 @@
 import { Box, Text, chakra } from '@chakra-ui/react';
+import { keyframes } from '@chakra-ui/system';
 import React from 'react';
+
+const runnerAnimation = keyframes`
+    0% { left: 0%; transform: translateX(-1%); }
+    100% { left: '100%'; transform: translateX(-99%); }
+`;
 
 interface Props {
   className?: string;
@@ -18,14 +24,14 @@ const ContentLoader = ({ className, text }: Props) => {
           position: 'absolute',
           width: '60px',
           height: '6px',
-          animation: `fromLeftToRight 700ms ease-in-out infinite alternate`,
-          left: '0%',
+          animation: `${ runnerAnimation } 700ms ease-in-out infinite alternate`,
+          left: '100%',
           top: 0,
           backgroundColor: 'blue.300',
           borderRadius: 'full',
         }}
       />
-      <Text mt={ 6 } color="text.secondary">
+      <Text mt={ 6 } variant="secondary">
         { text || 'Loading data, please wait...' }
       </Text>
     </Box>

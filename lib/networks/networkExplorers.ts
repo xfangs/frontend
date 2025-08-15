@@ -1,4 +1,5 @@
-import { mapValues } from 'es-toolkit';
+import _compose from 'lodash/fp/compose';
+import _mapValues from 'lodash/mapValues';
 
 import type { NetworkExplorer } from 'types/networks';
 
@@ -31,7 +32,7 @@ const networkExplorers: Array<NetworkExplorer> = (() => {
   return config.UI.explorers.items.map((explorer) => ({
     ...explorer,
     baseUrl: stripTrailingSlash(explorer.baseUrl),
-    paths: mapValues(explorer.paths, (value) => value ? stripTrailingSlash(addLeadingSlash(value)) : value),
+    paths: _mapValues(explorer.paths, _compose(stripTrailingSlash, addLeadingSlash)),
   }));
 })();
 

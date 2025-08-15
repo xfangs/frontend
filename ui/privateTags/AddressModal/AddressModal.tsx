@@ -8,25 +8,25 @@ import FormModal from 'ui/shared/FormModal';
 import AddressForm from './AddressForm';
 
 type Props = {
-  open: boolean;
-  onOpenChange: ({ open }: { open: boolean }) => void;
+  isOpen: boolean;
+  onClose: () => void;
   onSuccess: () => Promise<void>;
   data?: Partial<AddressTag>;
   pageType: string;
-};
+}
 
-const AddressModal: React.FC<Props> = ({ open, onOpenChange, onSuccess, data, pageType }) => {
+const AddressModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, data, pageType }) => {
   const title = data?.id ? 'Edit address tag' : 'New address tag';
   const text = !data?.id ? 'Label any address with a private address tag (up to 35 chars) to customize your explorer experience.' : '';
 
   const [ isAlertVisible, setAlertVisible ] = useState(false);
 
   React.useEffect(() => {
-    open && !data?.id && mixpanel.logEvent(
+    isOpen && !data?.id && mixpanel.logEvent(
       mixpanel.EventTypes.PRIVATE_TAG,
       { Action: 'Form opened', 'Page type': pageType, 'Tag type': 'Address' },
     );
-  }, [ data?.id, open, pageType ]);
+  }, [ data?.id, isOpen, pageType ]);
 
   const handleSuccess = React.useCallback(() => {
     if (!data?.id) {
@@ -39,12 +39,12 @@ const AddressModal: React.FC<Props> = ({ open, onOpenChange, onSuccess, data, pa
   }, [ data?.id, onSuccess, pageType ]);
 
   const renderForm = useCallback(() => {
-    return <AddressForm data={ data } onOpenChange={ onOpenChange } onSuccess={ handleSuccess } setAlertVisible={ setAlertVisible }/>;
-  }, [ data, onOpenChange, handleSuccess ]);
+    return <AddressForm data={ data } onClose={ onClose } onSuccess={ handleSuccess } setAlertVisible={ setAlertVisible }/>;
+  }, [ data, onClose, handleSuccess ]);
   return (
     <FormModal<AddressTag>
-      open={ open }
-      onOpenChange={ onOpenChange }
+      isOpen={ isOpen }
+      onClose={ onClose }
       title={ title }
       text={ text }
       renderForm={ renderForm }

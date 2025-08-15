@@ -1,23 +1,21 @@
-import { Box, Text } from '@chakra-ui/react';
+import { Hide, Show, Skeleton, Text } from '@chakra-ui/react';
 import React from 'react';
 
 import useApiQuery from 'lib/api/useApiQuery';
 import { generateListStub } from 'stubs/utils';
 import { ZKEVM_L2_TXN_BATCHES_ITEM } from 'stubs/zkEvmL2';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { ACTION_BAR_HEIGHT_DESKTOP } from 'ui/shared/ActionBar';
 import DataListDisplay from 'ui/shared/DataListDisplay';
 import PageTitle from 'ui/shared/Page/PageTitle';
 import useQueryWithPages from 'ui/shared/pagination/useQueryWithPages';
 import StickyPaginationWithText from 'ui/shared/StickyPaginationWithText';
-import ZkEvmTxnBatchesListItem from 'ui/txnBatches/zkEvmL2/ZkEvmTxnBatchesListItem';
-import ZkEvmTxnBatchesTable from 'ui/txnBatches/zkEvmL2/ZkEvmTxnBatchesTable';
+import ZkEvmTxnBatchesListItem from 'ui/zkEvmL2TxnBatches/ZkEvmTxnBatchesListItem';
+import ZkEvmTxnBatchesTable from 'ui/zkEvmL2TxnBatches/ZkEvmTxnBatchesTable';
 
 const ZkEvmL2TxnBatches = () => {
   const { data, isError, isPlaceholderData, pagination } = useQueryWithPages({
-    resourceName: 'general:zkevm_l2_txn_batches',
+    resourceName: 'zkevm_l2_txn_batches',
     options: {
-      placeholderData: generateListStub<'general:zkevm_l2_txn_batches'>(
+      placeholderData: generateListStub<'zkevm_l2_txn_batches'>(
         ZKEVM_L2_TXN_BATCHES_ITEM,
         50,
         {
@@ -30,7 +28,7 @@ const ZkEvmL2TxnBatches = () => {
     },
   });
 
-  const countersQuery = useApiQuery('general:zkevm_l2_txn_batches_count', {
+  const countersQuery = useApiQuery('zkevm_l2_txn_batches_count', {
     queryOptions: {
       placeholderData: 5231746,
     },
@@ -38,7 +36,7 @@ const ZkEvmL2TxnBatches = () => {
 
   const content = data?.items ? (
     <>
-      <Box hideFrom="lg">
+      <Show below="lg" ssr={ false }>
         { data.items.map(((item, index) => (
           <ZkEvmTxnBatchesListItem
             key={ item.number + (isPlaceholderData ? String(index) : '') }
@@ -46,10 +44,8 @@ const ZkEvmL2TxnBatches = () => {
             isLoading={ isPlaceholderData }
           />
         ))) }
-      </Box>
-      <Box hideBelow="lg">
-        <ZkEvmTxnBatchesTable items={ data.items } top={ pagination.isVisible ? ACTION_BAR_HEIGHT_DESKTOP : 0 } isLoading={ isPlaceholderData }/>
-      </Box>
+      </Show>
+      <Hide below="lg" ssr={ false }><ZkEvmTxnBatchesTable items={ data.items } top={ pagination.isVisible ? 80 : 0 } isLoading={ isPlaceholderData }/></Hide>
     </>
   ) : null;
 
@@ -59,8 +55,8 @@ const ZkEvmL2TxnBatches = () => {
     }
 
     return (
-      <Skeleton loading={ countersQuery.isPlaceholderData || isPlaceholderData } display="flex" flexWrap="wrap">
-        Txn batch
+      <Skeleton isLoaded={ !countersQuery.isPlaceholderData && !isPlaceholderData } display="flex" flexWrap="wrap">
+        Tx batch
         <Text fontWeight={ 600 } whiteSpace="pre"> #{ data.items[0].number } </Text>to
         <Text fontWeight={ 600 } whiteSpace="pre"> #{ data.items[data.items.length - 1].number } </Text>
         (total of { countersQuery.data?.toLocaleString() } batches)
@@ -72,15 +68,14 @@ const ZkEvmL2TxnBatches = () => {
 
   return (
     <>
-      <PageTitle title="Txn batches" withTextAd/>
+      <PageTitle title="Tx batches" withTextAd/>
       <DataListDisplay
         isError={ isError }
-        itemsNum={ data?.items.length }
-        emptyText="There are no txn batches."
+        items={ data?.items }
+        emptyText="There are no tx batches."
+        content={ content }
         actionBar={ actionBar }
-      >
-        { content }
-      </DataListDisplay>
+      />
     </>
   );
 };

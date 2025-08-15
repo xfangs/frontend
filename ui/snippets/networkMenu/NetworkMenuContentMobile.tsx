@@ -1,14 +1,11 @@
-import { Box, VStack, Flex, createListCollection } from '@chakra-ui/react';
-import { capitalize } from 'es-toolkit';
+import { Box, Select, VStack, Skeleton, Flex } from '@chakra-ui/react';
+import capitalize from 'lodash/capitalize';
 import React from 'react';
 
 import type { NetworkGroup, FeaturedNetwork } from 'types/networks';
 
-import type { SelectOption } from 'toolkit/chakra/select';
-import { Select } from 'toolkit/chakra/select';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-
 import NetworkMenuLink from './NetworkMenuLink';
+
 interface Props {
   tabs: Array<NetworkGroup>;
   items?: Array<FeaturedNetwork>;
@@ -24,44 +21,34 @@ const NetworkMenuContentMobile = ({ items, tabs }: Props) => {
     }
   }, [ items, selectedNetwork?.group, tabs ]);
 
-  const handleSelectChange = React.useCallback(({ value }: { value: Array<string> }) => {
-    setSelectedTab(value[0] as NetworkGroup);
+  const handleSelectChange = React.useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedTab(event.target.value as NetworkGroup);
   }, []);
 
-  const selectCollection = React.useMemo(() => {
-    return createListCollection<SelectOption>({
-      items: tabs.map((tab) => ({ label: capitalize(tab), value: tab })),
-    });
-  }, [ tabs ]);
-
   const content = !items || items.length === 0 ? (
-    <Flex mt={ 6 } flexDir="column" rowGap={ 2 }>
-      <Flex mx={ 3 } my={ 2 } alignItems="center">
-        <Skeleton loading h="30px" w="30px" borderRadius="full"/>
-        <Skeleton loading h="20px" w="60px" ml={ 3 }/>
+    <>
+      <Skeleton h="32px" w="100%"/>
+      <Flex mt={ 6 } flexDir="column" rowGap={ 2 }>
+        <Flex mx={ 3 } my={ 2 } alignItems="center">
+          <Skeleton h="30px" w="30px" borderRadius="full"/>
+          <Skeleton h="20px" w="60px" ml={ 3 }/>
+        </Flex>
+        <Flex mx={ 3 } my={ 2 } alignItems="center">
+          <Skeleton h="30px" w="30px" borderRadius="full"/>
+          <Skeleton h="20px" w="120px" ml={ 3 }/>
+        </Flex>
+        <Flex mx={ 3 } my={ 2 } alignItems="center">
+          <Skeleton h="30px" w="30px" borderRadius="full"/>
+          <Skeleton h="20px" w="80px" ml={ 3 }/>
+        </Flex>
       </Flex>
-      <Flex mx={ 3 } my={ 2 } alignItems="center">
-        <Skeleton loading h="30px" w="30px" borderRadius="full"/>
-        <Skeleton loading h="20px" w="120px" ml={ 3 }/>
-      </Flex>
-      <Flex mx={ 3 } my={ 2 } alignItems="center">
-        <Skeleton loading h="30px" w="30px" borderRadius="full"/>
-        <Skeleton loading h="20px" w="80px" ml={ 3 }/>
-      </Flex>
-    </Flex>
+    </>
   ) : (
     <>
-      { tabs.length > 1 && (
-        <Select
-          value={ [ selectedTab ] }
-          onValueChange={ handleSelectChange }
-          collection={ selectCollection }
-          placeholder="Select network type"
-          mb={ 3 }
-          contentProps={{ zIndex: 'modal' }}
-        />
-      ) }
-      <VStack as="ul" gap={ 2 } alignItems="stretch">
+      <Select size="xs" borderRadius="base" value={ selectedTab } onChange={ handleSelectChange } focusBorderColor="none">
+        { tabs.map((tab) => <option key={ tab } value={ tab }>{ capitalize(tab) }</option>) }
+      </Select>
+      <VStack as="ul" spacing={ 2 } alignItems="stretch" mt={ 6 }>
         { items
           .filter(({ group }) => group === selectedTab)
           .map((network) => (

@@ -10,25 +10,22 @@ import * as Layout from './components';
 
 const LayoutHome = ({ children }: Props) => {
   return (
-    <Layout.Root content={ children }>
-      <Layout.Container>
-        <Layout.TopRow/>
-        <Layout.NavBar/>
-        <HeaderMobile hideSearchBar/>
-        <Layout.MainArea>
-          <Layout.SideBar/>
-          <Layout.MainColumn
-            paddingTop={{ base: 3, lg: 6 }}
-          >
-            <HeaderAlert/>
-            <AppErrorBoundary>
-              { children }
-            </AppErrorBoundary>
-          </Layout.MainColumn>
-        </Layout.MainArea>
-        <Layout.Footer/>
-      </Layout.Container>
-    </Layout.Root>
+    <Layout.Container>
+      <Layout.TopRow/>
+      <HeaderMobile isHomePage/>
+      <Layout.MainArea>
+        <Layout.SideBar/>
+        <Layout.MainColumn
+          paddingTop={{ base: 6, lg: 9 }}
+        >
+          <HeaderAlert/>
+          <AppErrorBoundary>
+            { children }
+          </AppErrorBoundary>
+        </Layout.MainColumn>
+      </Layout.MainArea>
+      <Layout.Footer/>
+    </Layout.Container>
   );
 };
 

@@ -1,9 +1,12 @@
+import {
+  Tr,
+  Td,
+} from '@chakra-ui/react';
 import React, { useCallback } from 'react';
 
 import type { AddressTag } from 'types/api/account';
 
-import { TableCell, TableRow } from 'toolkit/chakra/table';
-import { Tag } from 'toolkit/chakra/tag';
+import Tag from 'ui/shared/chakra/Tag';
 import AddressEntity from 'ui/shared/entities/address/AddressEntity';
 import TableItemActionButtons from 'ui/shared/TableItemActionButtons';
 
@@ -24,22 +27,22 @@ const AddressTagTableItem = ({ item, onEditClick, onDeleteClick, isLoading }: Pr
   }, [ item, onDeleteClick ]);
 
   return (
-    <TableRow alignItems="top" key={ item.id }>
-      <TableCell>
+    <Tr alignItems="top" key={ item.id }>
+      <Td>
         <AddressEntity
           address={ item.address }
           isLoading={ isLoading }
           fontWeight="600"
           py="2px"
         />
-      </TableCell>
-      <TableCell whiteSpace="nowrap">
-        <Tag loading={ isLoading } truncated>{ item.name }</Tag>
-      </TableCell>
-      <TableCell>
+      </Td>
+      <Td whiteSpace="nowrap">
+        <Tag isLoading={ isLoading } isTruncated>{ item.name }</Tag>
+      </Td>
+      <Td>
         <TableItemActionButtons onDeleteClick={ onItemDeleteClick } onEditClick={ onItemEditClick } isLoading={ isLoading }/>
-      </TableCell>
-    </TableRow>
+      </Td>
+    </Tr>
   );
 };
 

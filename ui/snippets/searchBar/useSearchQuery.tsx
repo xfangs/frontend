@@ -1,7 +1,6 @@
 import { useRouter } from 'next/router';
 import React from 'react';
 
-import { fromBech32Address, isBech32Address } from 'lib/address/bech32';
 import useApiQuery from 'lib/api/useApiQuery';
 import useDebounce from 'lib/hooks/useDebounce';
 import useUpdateValueEffect from 'lib/hooks/useUpdateValueEffect';
@@ -10,7 +9,7 @@ import { SEARCH_RESULT_ITEM, SEARCH_RESULT_NEXT_PAGE_PARAMS } from 'stubs/search
 import { generateListStub } from 'stubs/utils';
 import useQueryWithPages from 'ui/shared/pagination/useQueryWithPages';
 
-export default function useSearchQuery(withRedirectCheck?: boolean) {
+export default function useSearchQuery() {
   const router = useRouter();
   const q = React.useRef(getQueryParamString(router.query.q));
   const initialValue = q.current;
@@ -21,18 +20,18 @@ export default function useSearchQuery(withRedirectCheck?: boolean) {
   const pathname = router.pathname;
 
   const query = useQueryWithPages({
-    resourceName: 'general:search',
-    filters: { q: isBech32Address(debouncedSearchTerm) ? fromBech32Address(debouncedSearchTerm) : debouncedSearchTerm },
+    resourceName: 'search',
+    filters: { q: debouncedSearchTerm },
     options: {
       enabled: debouncedSearchTerm.trim().length > 0,
-      placeholderData: generateListStub<'general:search'>(SEARCH_RESULT_ITEM, 50, { next_page_params: SEARCH_RESULT_NEXT_PAGE_PARAMS }),
+      placeholderData: generateListStub<'search'>(SEARCH_RESULT_ITEM, 50, { next_page_params: SEARCH_RESULT_NEXT_PAGE_PARAMS }),
     },
   });
 
-  const redirectCheckQuery = useApiQuery('general:search_check_redirect', {
+  const redirectCheckQuery = useApiQuery('search_check_redirect', {
     // on search result page we check redirect only once on mount
     queryParams: { q: q.current },
-    queryOptions: { enabled: Boolean(q.current) && withRedirectCheck },
+    queryOptions: { enabled: Boolean(q.current) },
   });
 
   useUpdateValueEffect(() => {

@@ -1,32 +1,27 @@
-import { Flex, Text } from '@chakra-ui/react';
+import { IconButton, Popover, PopoverTrigger, PopoverContent, PopoverBody, Flex, Text, useColorModeValue } from '@chakra-ui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 
 import type { SocketMessage } from 'lib/socket/types';
 import type { IndexingStatus } from 'types/api/indexingStatus';
 
-import config from 'configs/app';
 import useApiQuery, { getResourceKey } from 'lib/api/useApiQuery';
+import { apos, nbsp, ndash } from 'lib/html-entities';
 import useSocketChannel from 'lib/socket/useSocketChannel';
 import useSocketMessage from 'lib/socket/useSocketMessage';
-import { Tooltip } from 'toolkit/chakra/tooltip';
-import { apos, nbsp, ndash } from 'toolkit/utils/htmlEntities';
 import IconSvg from 'ui/shared/IconSvg';
 
 const IntTxsIndexingStatus = () => {
 
-  const { data, isError, isPending } = useApiQuery('general:homepage_indexing_status', {
-    queryOptions: {
-      enabled: !config.UI.indexingAlert.intTxs.isHidden,
-    },
-  });
+  const { data, isError, isPending } = useApiQuery('homepage_indexing_status');
 
-  const bgColor = { base: 'blackAlpha.100', _dark: 'whiteAlpha.100' };
+  const bgColor = useColorModeValue('blackAlpha.100', 'whiteAlpha.100');
+  const hintTextcolor = useColorModeValue('black', 'white');
 
   const queryClient = useQueryClient();
 
   const handleInternalTxsIndexStatus: SocketMessage.InternalTxsIndexStatus['handler'] = React.useCallback((payload) => {
-    queryClient.setQueryData(getResourceKey('general:homepage_indexing_status'), (prevData: IndexingStatus | undefined) => {
+    queryClient.setQueryData(getResourceKey('homepage_indexing_status'), (prevData: IndexingStatus | undefined) => {
 
       const newData = prevData ? { ...prevData } : {} as IndexingStatus;
       newData.finished_indexing = payload.finished;
@@ -43,7 +38,7 @@ const IntTxsIndexingStatus = () => {
 
   useSocketMessage({
     channel: internalTxsIndexingChannel,
-    event: 'index_status',
+    event: 'internal_txs_index_status',
     handler: handleInternalTxsIndexStatus,
   });
 
@@ -56,7 +51,7 @@ const IntTxsIndexingStatus = () => {
   }
 
   const hint = (
-    <Text textStyle="xs">
+    <Text fontSize="xs" color={ hintTextcolor }>
       { data.indexed_internal_transactions_ratio &&
         `${ Math.floor(Number(data.indexed_internal_transactions_ratio) * 100) }% Blocks With Internal Transactions Indexed${ nbsp }${ ndash } ` }
       We{ apos }re indexing this chain right now. Some of the counts may be inaccurate.
@@ -71,13 +66,18 @@ const IntTxsIndexingStatus = () => {
       borderRadius="base"
       alignItems="center"
       justifyContent="center"
-      columnGap={ 1 }
       color="green.400"
       _hover={{ color: 'blue.400' }}
     >
-      <IconSvg name="info" boxSize={ 5 }/>
+      <IconButton
+        colorScheme="none"
+        aria-label="hint"
+        icon={ <IconSvg name="info" boxSize={ 5 }/> }
+        boxSize={ 6 }
+        variant="simple"
+      />
       { data.indexed_internal_transactions_ratio && (
-        <Text fontWeight={ 600 } textStyle="xs" color="inherit">
+        <Text fontWeight={ 600 } fontSize="xs" color="inherit">
           { Math.floor(Number(data.indexed_internal_transactions_ratio) * 100) + '%' }
         </Text>
       ) }
@@ -85,9 +85,16 @@ const IntTxsIndexingStatus = () => {
   );
 
   return (
-    <Tooltip content={ hint } interactive positioning={{ placement: 'bottom-start' }} lazyMount>
-      { trigger }
-    </Tooltip>
+    <Popover placement="bottom-start" isLazy trigger="hover">
+      <PopoverTrigger>
+        { trigger }
+      </PopoverTrigger>
+      <PopoverContent maxH="450px" overflowY="hidden" w="240px">
+        <PopoverBody p={ 4 } bgColor={ bgColor } boxShadow="2xl">
+          { hint }
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
   );
 };
 

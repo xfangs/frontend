@@ -1,20 +1,16 @@
-import { chakra } from '@chakra-ui/react';
+import { AccordionItem, chakra } from '@chakra-ui/react';
 import React from 'react';
-
-import { AccordionItem } from 'toolkit/chakra/accordion';
 
 interface Props {
   children: React.ReactNode;
   level?: number;
   className?: string;
   isFlat?: boolean;
-  value: string;
 }
 
-const MetadataAccordionItem = ({ children, className, level, isFlat, value }: Props) => {
+const MetadataAccordionItem = ({ children, className, level, isFlat }: Props) => {
   return (
     <AccordionItem
-      value={ value }
       className={ className }
       display="flex"
       alignItems="flex-start"
@@ -22,14 +18,15 @@ const MetadataAccordionItem = ({ children, className, level, isFlat, value }: Pr
       py={ 2 }
       pl={ isFlat ? 0 : 6 }
       columnGap={ 3 }
-      borderColor="border.divider"
+      borderTopWidth="1px"
+      borderColor="divider"
       wordBreak="break-all"
       rowGap={ 1 }
-      _first={{
-        borderTopWidth: level === 0 ? '1px' : '0px',
-      }}
       _last={{
         borderBottomWidth: level === 0 ? '1px' : '0px',
+      }}
+      _first={{
+        borderTopWidth: level === 0 ? '1px' : '0px',
       }}
     >
       { children }

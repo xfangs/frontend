@@ -1,4 +1,4 @@
-import { useColorModeValue } from 'toolkit/chakra/color-mode';
+import { useColorModeValue } from '@chakra-ui/react';
 
 import * as themes from './themes';
 

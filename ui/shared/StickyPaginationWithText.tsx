@@ -9,9 +9,9 @@ import Pagination from './pagination/Pagination';
 type Props = {
   pagination: PaginationParams;
   text: React.ReactNode;
-};
+}
 
-const StickyPaginationWithText = ({ pagination, text }: Props) => {
+const TextSeparator = ({ pagination, text }: Props) => {
   if (!pagination.isVisible) {
     return <Box mb={ 6 }>{ text }</Box>;
   }
@@ -31,4 +31,4 @@ const StickyPaginationWithText = ({ pagination, text }: Props) => {
   );
 };
 
-export default StickyPaginationWithText;
+export default TextSeparator;

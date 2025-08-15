@@ -1,26 +1,30 @@
 import { Grid, GridItem } from '@chakra-ui/react';
-import React from 'react';
+import React, { useCallback } from 'react';
+import { Controller } from 'react-hook-form';
+import type { Path, ControllerRenderProps, FieldValues, Control } from 'react-hook-form';
 
 import config from 'configs/app';
-import { FormFieldCheckbox } from 'toolkit/components/forms/fields/FormFieldCheckbox';
+import CheckboxInput from 'ui/shared/CheckboxInput';
 
-import type { Inputs as FormFields } from './AddressForm';
+// does it depend on the network?
+const NOTIFICATIONS = [ 'native', 'ERC-20', 'ERC-721' ] as const;
+const NOTIFICATIONS_NAMES = [ config.chain.currency.symbol, 'ERC-20', 'ERC-721, ERC-1155 (NFT)' ];
 
-const tokenStandardName = config.chain.tokenStandard;
+type Props<Inputs extends FieldValues> = {
+  control: Control<Inputs>;
+}
 
-const NOTIFICATIONS = [ 'native', 'ERC-20', 'ERC-721', 'ERC-404' ] as const;
-const NOTIFICATIONS_NAMES = [
-  config.chain.currency.symbol,
-  `${ tokenStandardName }-20`,
-  `${ tokenStandardName }-721, ${ tokenStandardName }-1155 (NFT)`,
-  `${ tokenStandardName }-404` ];
+export default function AddressFormNotifications<Inputs extends FieldValues, Checkboxes extends Path<Inputs>>({ control }: Props<Inputs>) {
+  // eslint-disable-next-line react/display-name
+  const renderCheckbox = useCallback((text: string) => ({ field }: {field: ControllerRenderProps<Inputs, Checkboxes>}) => (
+    <CheckboxInput<Inputs, Checkboxes> text={ text } field={ field }/>
+  ), []);
 
-export default function AddressFormNotifications() {
   return (
     <Grid templateColumns={{ base: 'repeat(2, max-content)', lg: 'repeat(3, max-content)' }} gap={{ base: '10px 24px', lg: '20px 24px' }}>
-      { NOTIFICATIONS.map((notification, index: number) => {
-        const incomingFieldName = `notification_settings.${ notification }.incoming` as const;
-        const outgoingFieldName = `notification_settings.${ notification }.outcoming` as const;
+      { NOTIFICATIONS.map((notification: string, index: number) => {
+        const incomingFieldName = `notification_settings.${ notification }.incoming` as Checkboxes;
+        const outgoingFieldName = `notification_settings.${ notification }.outcoming` as Checkboxes;
         return (
           <React.Fragment key={ notification }>
             <GridItem
@@ -33,15 +37,19 @@ export default function AddressFormNotifications() {
               { NOTIFICATIONS_NAMES[index] }
             </GridItem>
             <GridItem>
-              <FormFieldCheckbox<FormFields, typeof incomingFieldName>
+              <Controller
                 name={ incomingFieldName }
-                label="Incoming"
+                control={ control }
+
+                render={ renderCheckbox('Incoming') }
               />
             </GridItem>
             <GridItem>
-              <FormFieldCheckbox<FormFields, typeof outgoingFieldName>
+              <Controller
                 name={ outgoingFieldName }
-                label="Outgoing"
+                control={ control }
+
+                render={ renderCheckbox('Outgoing') }
               />
             </GridItem>
           </React.Fragment>

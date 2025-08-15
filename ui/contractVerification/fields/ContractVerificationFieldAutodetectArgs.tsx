@@ -1,29 +1,39 @@
 import React from 'react';
-import { useFormContext } from 'react-hook-form';
+import type { ControllerRenderProps } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 
 import type { FormFields } from '../types';
 
-import { FormFieldCheckbox } from 'toolkit/components/forms/fields/FormFieldCheckbox';
+import CheckboxInput from 'ui/shared/CheckboxInput';
 
 import ContractVerificationFormRow from '../ContractVerificationFormRow';
 import ContractVerificationFieldConstructorArgs from './ContractVerificationFieldConstructorArgs';
 
 const ContractVerificationFieldAutodetectArgs = () => {
   const [ isOn, setIsOn ] = React.useState(true);
-  const { resetField } = useFormContext<FormFields>();
+  const { formState, control, resetField } = useFormContext<FormFields>();
 
   const handleCheckboxChange = React.useCallback(() => {
     !isOn && resetField('constructor_args');
     setIsOn(prev => !prev);
   }, [ isOn, resetField ]);
 
+  const renderControl = React.useCallback(({ field }: {field: ControllerRenderProps<FormFields, 'autodetect_constructor_args'>}) => (
+    <CheckboxInput<FormFields, 'autodetect_constructor_args'>
+      text="Try to fetch constructor arguments automatically"
+      field={ field }
+      isDisabled={ formState.isSubmitting }
+      onChange={ handleCheckboxChange }
+    />
+  ), [ formState.isSubmitting, handleCheckboxChange ]);
+
   return (
     <>
       <ContractVerificationFormRow>
-        <FormFieldCheckbox<FormFields, 'autodetect_constructor_args'>
+        <Controller
           name="autodetect_constructor_args"
-          label="Try to fetch constructor arguments automatically"
-          onChange={ handleCheckboxChange }
+          control={ control }
+          render={ renderControl }
         />
       </ContractVerificationFormRow>
       { !isOn && <ContractVerificationFieldConstructorArgs/> }

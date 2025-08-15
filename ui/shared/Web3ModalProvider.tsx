@@ -1,84 +1,113 @@
-import type { AppKitNetwork } from '@reown/appkit/networks';
-import { createAppKit, useAppKitTheme } from '@reown/appkit/react';
+import { useColorMode } from '@chakra-ui/react';
+import { jsonRpcProvider } from '@wagmi/core/providers/jsonRpc';
+import { createWeb3Modal, useWeb3ModalTheme, defaultWagmiConfig } from '@web3modal/wagmi/react';
 import React from 'react';
-import { WagmiProvider } from 'wagmi';
+import type { Chain } from 'wagmi';
+import { configureChains, WagmiConfig } from 'wagmi';
 
 import config from 'configs/app';
-import { currentChain, parentChain, clusterChains } from 'lib/web3/chains';
-import wagmiConfig from 'lib/web3/wagmiConfig';
-import { useColorMode } from 'toolkit/chakra/color-mode';
-import colors from 'toolkit/theme/foundations/colors';
-import { BODY_TYPEFACE } from 'toolkit/theme/foundations/typography';
-import zIndex from 'toolkit/theme/foundations/zIndex';
+import colors from 'theme/foundations/colors';
+import { BODY_TYPEFACE } from 'theme/foundations/typography';
+import zIndices from 'theme/foundations/zIndices';
 
 const feature = config.features.blockchainInteraction;
 
-const init = () => {
+const getConfig = () => {
   try {
-    if (!feature.isEnabled || !wagmiConfig.adapter) {
-      return;
+    if (!feature.isEnabled) {
+      throw new Error();
     }
 
-    const networks = [ currentChain, parentChain, ...(clusterChains ?? []) ].filter(Boolean) as [AppKitNetwork, ...Array<AppKitNetwork>];
+    const currentChain: Chain = {
+      id: Number(config.chain.id),
+      name: config.chain.name || '',
+      network: config.chain.name || '',
+      nativeCurrency: {
+        decimals: config.chain.currency.decimals,
+        name: config.chain.currency.name || '',
+        symbol: config.chain.currency.symbol || '',
+      },
+      rpcUrls: {
+        'public': {
+          http: [ config.chain.rpcUrl || '' ],
+        },
+        'default': {
+          http: [ config.chain.rpcUrl || '' ],
+        },
+      },
+      blockExplorers: {
+        'default': {
+          name: 'Blockscout',
+          url: config.app.baseUrl,
+        },
+      },
+    };
 
-    createAppKit({
-      adapters: [ wagmiConfig.adapter ],
-      networks,
-      metadata: {
-        name: `${ config.chain.name } explorer`,
-        description: `${ config.chain.name } explorer`,
-        url: config.app.baseUrl,
-        icons: [ config.UI.navigation.icon.default ].filter(Boolean),
-      },
+    const { chains } = configureChains(
+      [ currentChain ],
+      [
+        jsonRpcProvider({
+          rpc: () => ({
+            http: config.chain.rpcUrl || '',
+          }),
+        }),
+      ],
+    );
+
+    const wagmiConfig = defaultWagmiConfig({
+      chains,
       projectId: feature.walletConnect.projectId,
-      features: {
-        analytics: false,
-        email: false,
-        socials: [],
-        onramp: false,
-        swaps: false,
-      },
+    });
+
+    createWeb3Modal({
+      wagmiConfig,
+      projectId: feature.walletConnect.projectId,
+      chains,
       themeVariables: {
         '--w3m-font-family': `${ BODY_TYPEFACE }, sans-serif`,
-        '--w3m-accent': colors.blue[600].value,
+        '--w3m-accent': colors.blue[600],
         '--w3m-border-radius-master': '2px',
-        '--w3m-z-index': zIndex?.modal2?.value,
+        '--w3m-z-index': zIndices.modal,
       },
-      featuredWalletIds: [],
-      allowUnsupportedChain: true,
     });
-  } catch (error) {}
+
+    return { wagmiConfig };
+  } catch (error) {
+    return { };
+  }
 };
 
-init();
+const { wagmiConfig } = getConfig();
 
 interface Props {
   children: React.ReactNode;
+  fallback?: JSX.Element | (() => JSX.Element);
 }
 
-const DefaultProvider = ({ children }: Props) => {
-  return (
-    <WagmiProvider config={ wagmiConfig.config }>
-      { children }
-    </WagmiProvider>
-  );
+const Fallback = ({ children, fallback }: Props) => {
+  return typeof fallback === 'function' ? fallback() : (fallback || <>{ children }</>); // eslint-disable-line react/jsx-no-useless-fragment
 };
 
-const Web3ModalProvider = ({ children }: Props) => {
+const Provider = ({ children, fallback }: Props) => {
   const { colorMode } = useColorMode();
-  const { setThemeMode } = useAppKitTheme();
+  const { setThemeMode } = useWeb3ModalTheme();
 
   React.useEffect(() => {
-    setThemeMode(colorMode ?? 'light');
+    setThemeMode(colorMode);
   }, [ colorMode, setThemeMode ]);
 
+  // not really necessary, but we have to make typescript happy
+  if (!wagmiConfig || !feature.isEnabled) {
+    return <Fallback fallback={ fallback }>{ children }</Fallback>;
+  }
+
   return (
-    <DefaultProvider>
+    <WagmiConfig config={ wagmiConfig }>
       { children }
-    </DefaultProvider>
+    </WagmiConfig>
   );
 };
 
-const Provider = feature.isEnabled ? Web3ModalProvider : DefaultProvider;
+const Web3ModalProvider = wagmiConfig && feature.isEnabled ? Provider : Fallback;
 
-export default Provider;
+export default Web3ModalProvider;

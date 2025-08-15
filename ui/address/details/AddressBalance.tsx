@@ -8,14 +8,12 @@ import config from 'configs/app';
 import { getResourceKey } from 'lib/api/useApiQuery';
 import useSocketChannel from 'lib/socket/useSocketChannel';
 import useSocketMessage from 'lib/socket/useSocketMessage';
-import { currencyUnits } from 'lib/units';
 import CurrencyValue from 'ui/shared/CurrencyValue';
-import * as DetailedInfo from 'ui/shared/DetailedInfo/DetailedInfo';
-import NativeTokenIcon from 'ui/shared/NativeTokenIcon';
+import DetailsInfoItem from 'ui/shared/DetailsInfoItem';
 
 interface Props {
   data: Pick<Address, 'block_number_balance_updated_at' | 'coin_balance' | 'hash' | 'exchange_rate'>;
-  isLoading?: boolean;
+  isLoading: boolean;
 }
 
 const AddressBalance = ({ data, isLoading }: Props) => {
@@ -28,7 +26,7 @@ const AddressBalance = ({ data, isLoading }: Props) => {
     }
 
     setLastBlockNumber(blockNumber);
-    const queryKey = getResourceKey('general:address', { pathParams: { hash: data.hash } });
+    const queryKey = getResourceKey('address', { pathParams: { hash: data.hash } });
     queryClient.setQueryData(queryKey, (prevData: Address | undefined) => {
       if (!prevData) {
         return;
@@ -66,27 +64,24 @@ const AddressBalance = ({ data, isLoading }: Props) => {
   });
 
   return (
-    <>
-      <DetailedInfo.ItemLabel
-        hint={ `${ currencyUnits.ether } balance` }
+    <DetailsInfoItem
+      title="Balance"
+      hint={ `Address balance in ${ config.chain.currency.symbol }. Doesn't include ERC20, ERC721 and ERC1155 tokens` }
+      flexWrap="nowrap"
+      alignItems="flex-start"
+      isLoading={ isLoading }
+    >
+      <CurrencyValue
+        value={ data.coin_balance || '0' }
+        exchangeRate={ data.exchange_rate }
+        decimals={ String(config.chain.currency.decimals) }
+        currency={ config.chain.currency.symbol }
+        accuracyUsd={ 2 }
+        accuracy={ 8 }
+        flexWrap="wrap"
         isLoading={ isLoading }
-      >
-        Balance
-      </DetailedInfo.ItemLabel>
-      <DetailedInfo.ItemValue alignSelf="flex-start" flexWrap="nowrap">
-        <NativeTokenIcon boxSize={ 6 } mr={ 2 } isLoading={ isLoading }/>
-        <CurrencyValue
-          value={ data.coin_balance || '0' }
-          exchangeRate={ data.exchange_rate }
-          decimals={ String(config.chain.currency.decimals) }
-          currency={ currencyUnits.ether }
-          accuracyUsd={ 2 }
-          accuracy={ 8 }
-          flexWrap="wrap"
-          isLoading={ isLoading }
-        />
-      </DetailedInfo.ItemValue>
-    </>
+      />
+    </DetailsInfoItem>
   );
 };
 

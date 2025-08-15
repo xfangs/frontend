@@ -1,17 +1,26 @@
 import React from 'react';
+import type { ControllerRenderProps } from 'react-hook-form';
+import { useFormContext, Controller } from 'react-hook-form';
 
 import type { FormFields } from '../types';
 
-import { FormFieldCheckbox } from 'toolkit/components/forms/fields/FormFieldCheckbox';
+import CheckboxInput from 'ui/shared/CheckboxInput';
 
 import ContractVerificationFormRow from '../ContractVerificationFormRow';
 
 const ContractVerificationFieldIsYul = () => {
+  const { formState, control } = useFormContext<FormFields>();
+
+  const renderControl = React.useCallback(({ field }: {field: ControllerRenderProps<FormFields, 'is_yul'>}) => (
+    <CheckboxInput<FormFields, 'is_yul'> text="Is Yul contract" field={ field } isDisabled={ formState.isSubmitting }/>
+  ), [ formState.isSubmitting ]);
+
   return (
     <ContractVerificationFormRow>
-      <FormFieldCheckbox<FormFields, 'is_yul'>
+      <Controller
         name="is_yul"
-        label="Is Yul contract"
+        control={ control }
+        render={ renderControl }
       />
     </ContractVerificationFormRow>
   );

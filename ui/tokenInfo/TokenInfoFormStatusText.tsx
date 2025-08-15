@@ -1,8 +1,7 @@
+import { Alert } from '@chakra-ui/react';
 import React from 'react';
 
 import type { TokenInfoApplication } from 'types/api/account';
-
-import { Alert } from 'toolkit/chakra/alert';
 
 interface Props {
   application?: TokenInfoApplication;

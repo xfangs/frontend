@@ -1,4 +1,4 @@
-import { HStack, VStack, Flex, Text } from '@chakra-ui/react';
+import { HStack, VStack, Flex, Skeleton, Text } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
 import React from 'react';
 
@@ -6,9 +6,7 @@ import type { WatchlistAddress } from 'types/api/account';
 
 import config from 'configs/app';
 import getCurrencyValue from 'lib/getCurrencyValue';
-import { currencyUnits } from 'lib/units';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { nbsp } from 'toolkit/utils/htmlEntities';
+import { nbsp } from 'lib/html-entities';
 import CurrencyValue from 'ui/shared/CurrencyValue';
 import AddressEntity from 'ui/shared/entities/address/AddressEntity';
 import * as TokenEntity from 'ui/shared/entities/token/TokenEntity';
@@ -19,14 +17,14 @@ const WatchListAddressItem = ({ item, isLoading }: { item: WatchlistAddress; isL
     name: config.chain.currency.name || '',
     icon_url: '',
     symbol: '',
-    address_hash: '',
+    address: '',
     type: 'ERC-20' as const,
   }), [ ]);
 
   const { usdBn: usdNative } = getCurrencyValue({ value: item.address_balance, accuracy: 2, accuracyUsd: 2, exchangeRate: item.exchange_rate });
 
   return (
-    <VStack gap={ 3 } align="stretch" fontWeight={ 500 }>
+    <VStack spacing={ 3 } align="stretch" fontWeight={ 500 }>
       <AddressEntity
         address={ item.address }
         isLoading={ isLoading }
@@ -38,8 +36,8 @@ const WatchListAddressItem = ({ item, isLoading }: { item: WatchlistAddress; isL
           token={ nativeTokenData }
           isLoading={ isLoading }
         />
-        <Skeleton loading={ isLoading } whiteSpace="pre" display="inline-flex">
-          <span>{ currencyUnits.ether } balance: </span>
+        <Skeleton isLoaded={ !isLoading } whiteSpace="pre" display="inline-flex">
+          <span>{ config.chain.currency.symbol } balance: </span>
           <CurrencyValue
             value={ item.address_balance }
             exchangeRate={ item.exchange_rate }
@@ -49,19 +47,19 @@ const WatchListAddressItem = ({ item, isLoading }: { item: WatchlistAddress; isL
           />
         </Skeleton>
       </Flex>
-      { Boolean(item.tokens_count) && (
-        <HStack gap={ 2 } fontSize="sm" pl={ 7 }>
+      { item.tokens_count && (
+        <HStack spacing={ 2 } fontSize="sm" pl={ 7 }>
           <IconSvg name="tokens" boxSize={ 5 } isLoading={ isLoading } borderRadius="sm"/>
-          <Skeleton loading={ isLoading } display="inline-flex">
+          <Skeleton isLoaded={ !isLoading } display="inline-flex">
             <span>{ `Tokens:${ nbsp }` + item.tokens_count + (item.tokens_overflow ? '+' : '') }</span>
-            <Text color="text.secondary">{ `${ nbsp }($${ BigNumber(item.tokens_fiat_value).toFormat(2) })` }</Text>
+            <Text variant="secondary" fontWeight={ 400 }>{ `${ nbsp }($${ BigNumber(item.tokens_fiat_value).toFormat(2) })` }</Text>
           </Skeleton>
         </HStack>
       ) }
-      { Boolean(item.tokens_fiat_value) && (
-        <HStack gap={ 2 } fontSize="sm" pl={ 7 }>
+      { item.tokens_fiat_value && (
+        <HStack spacing={ 2 } fontSize="sm" pl={ 7 }>
           <IconSvg boxSize={ 5 } name="wallet" isLoading={ isLoading }/>
-          <Skeleton loading={ isLoading } display="inline-flex">
+          <Skeleton isLoaded={ !isLoading } display="inline-flex">
             <Text>{ `Net worth:${ nbsp }` }
               {
                 `${ item.tokens_overflow ? '>' : '' }

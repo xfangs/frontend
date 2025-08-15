@@ -1,47 +1,42 @@
 import { Box } from '@chakra-ui/react';
+import { test as base, expect } from '@playwright/experimental-ct-react';
 import React from 'react';
 
+import * as textAdMock from 'mocks/ad/textAd';
 import * as tokens from 'mocks/tokens/tokenInfo';
-import { ENVS_MAP } from 'playwright/fixtures/mockEnvs';
-import { test, expect } from 'playwright/lib';
+import contextWithEnvs from 'playwright/fixtures/contextWithEnvs';
+import TestApp from 'playwright/TestApp';
+import buildApiUrl from 'playwright/utils/buildApiUrl';
+import * as configs from 'playwright/utils/configs';
 
 import Tokens from './Tokens';
 
-test.beforeEach(async({ mockTextAd, mockAssetResponse }) => {
-  await mockTextAd();
-  await mockAssetResponse(tokens.tokenInfoERC20a.icon_url as string, './playwright/mocks/image_svg.svg');
+base.beforeEach(async({ page }) => {
+  await page.route('https://request-global.czilladx.com/serve/native.php?z=19260bf627546ab7242', (route) => route.fulfill({
+    status: 200,
+    body: JSON.stringify(textAdMock.duck),
+  }));
+  await page.route(textAdMock.duck.ad.thumbnail, (route) => {
+    return route.fulfill({
+      status: 200,
+      path: './playwright/mocks/image_s.jpg',
+    });
+  });
 });
 
-const allTokens = {
-  items: [
-    tokens.tokenInfoERC20a, tokens.tokenInfoERC20b, tokens.tokenInfoERC20c, tokens.tokenInfoERC20d,
-    tokens.tokenInfoERC721a, tokens.tokenInfoERC721b, tokens.tokenInfoERC721c,
-    tokens.tokenInfoERC1155a, tokens.tokenInfoERC1155b, tokens.tokenInfoERC1155WithoutName,
-  ],
-  next_page_params: {
-    holders_count: 1,
-    items_count: 1,
-    name: 'a',
-    market_cap: '0',
-  },
-};
-
-// FIXME: test is flaky, screenshot in docker container is different from local
-test.skip('base view +@mobile +@dark-mode', async({ render, mockApiResponse }) => {
-
-  await mockApiResponse('general:tokens', allTokens);
-
-  const component = await render(
-    <div>
-      <Box h={{ base: '134px', lg: 6 }}/>
-      <Tokens/>
-    </div>,
-  );
-
-  await expect(component).toHaveScreenshot();
-});
-
-test('with search +@mobile +@dark-mode', async({ render, mockApiResponse }) => {
+base('base view +@mobile +@dark-mode', async({ mount, page }) => {
+  const allTokens = {
+    items: [
+      tokens.tokenInfoERC20a, tokens.tokenInfoERC20b, tokens.tokenInfoERC20c, tokens.tokenInfoERC20d,
+      tokens.tokenInfoERC721a, tokens.tokenInfoERC721b, tokens.tokenInfoERC721c,
+      tokens.tokenInfoERC1155a, tokens.tokenInfoERC1155b, tokens.tokenInfoERC1155WithoutName,
+    ],
+    next_page_params: {
+      holder_count: 1,
+      items_count: 1,
+      name: 'a',
+    },
+  };
   const filteredTokens = {
     items: [
       tokens.tokenInfoERC20a, tokens.tokenInfoERC20b, tokens.tokenInfoERC20c,
@@ -49,24 +44,40 @@ test('with search +@mobile +@dark-mode', async({ render, mockApiResponse }) => {
     next_page_params: null,
   };
 
-  await mockApiResponse('general:tokens', allTokens);
-  await mockApiResponse('general:tokens', filteredTokens, { queryParams: { q: 'foo' } });
+  const ALL_TOKENS_API_URL = buildApiUrl('tokens');
+  const FILTERED_TOKENS_API_URL = buildApiUrl('tokens') + '?q=foo';
 
-  const component = await render(
-    <div>
+  await page.route(ALL_TOKENS_API_URL, (route) => route.fulfill({
+    status: 200,
+    body: JSON.stringify(allTokens),
+  }));
+
+  await page.route(FILTERED_TOKENS_API_URL, (route) => route.fulfill({
+    status: 200,
+    body: JSON.stringify(filteredTokens),
+  }));
+
+  const component = await mount(
+    <TestApp>
       <Box h={{ base: '134px', lg: 6 }}/>
       <Tokens/>
-    </div>,
+    </TestApp>,
   );
 
+  await expect(component).toHaveScreenshot();
+
   await component.getByRole('textbox', { name: 'Token name or symbol' }).focus();
-  await component.getByRole('textbox', { name: 'Token name or symbol' }).fill('foo');
-  await component.getByRole('textbox', { name: 'Token name or symbol' }).blur();
+  await component.getByRole('textbox', { name: 'Token name or symbol' }).type('foo');
 
   await expect(component).toHaveScreenshot();
 });
 
-test.describe('bridged tokens', () => {
+base.describe('bridged tokens', async() => {
+  const test = base.extend({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    context: contextWithEnvs(configs.featureEnvs.bridgedTokens) as any,
+  });
+
   const bridgedTokens = {
     items: [
       tokens.bridgedTokenA,
@@ -74,10 +85,9 @@ test.describe('bridged tokens', () => {
       tokens.bridgedTokenC,
     ],
     next_page_params: {
-      holders_count: 1,
+      holder_count: 1,
       items_count: 1,
       name: 'a',
-      market_cap: null,
     },
   };
   const bridgedFilteredTokens = {
@@ -91,24 +101,33 @@ test.describe('bridged tokens', () => {
       query: { tab: 'bridged' },
     },
   };
+  const BRIDGED_TOKENS_API_URL = buildApiUrl('tokens_bridged');
 
-  test('base view', async({ render, page, mockApiResponse, mockEnvs }) => {
-    await mockEnvs(ENVS_MAP.bridgedTokens);
-    await mockApiResponse('general:tokens_bridged', bridgedTokens);
-    await mockApiResponse('general:tokens_bridged', bridgedFilteredTokens, { queryParams: { chain_ids: '99' } });
+  test.beforeEach(async({ page }) => {
+    await page.route(BRIDGED_TOKENS_API_URL, (route) => route.fulfill({
+      status: 200,
+      body: JSON.stringify(bridgedTokens),
+    }));
+  });
 
-    const component = await render(
-      <div>
+  test('base view', async({ mount, page }) => {
+    await page.route(BRIDGED_TOKENS_API_URL + '?chain_ids=99', (route) => route.fulfill({
+      status: 200,
+      body: JSON.stringify(bridgedFilteredTokens),
+    }));
+
+    const component = await mount(
+      <TestApp>
         <Box h={{ base: '134px', lg: 6 }}/>
         <Tokens/>
-      </div>,
+      </TestApp>,
       { hooksConfig },
     );
 
     await expect(component).toHaveScreenshot();
 
     await component.getByRole('button', { name: /filter/i }).click();
-    await page.locator('label').filter({ hasText: /poa/i }).click();
+    await component.locator('label').filter({ hasText: /poa/i }).click();
     await page.click('body');
 
     await expect(component).toHaveScreenshot();

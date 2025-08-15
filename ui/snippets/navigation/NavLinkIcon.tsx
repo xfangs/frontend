@@ -1,25 +1,19 @@
-import { chakra } from '@chakra-ui/react';
 import React from 'react';
 
-import type { NavItem, NavGroupItem } from 'types/client/navigation';
+import type { NavItem, NavGroupItem } from 'types/client/navigation-items';
 
 import IconSvg from 'ui/shared/IconSvg';
 
-interface Props {
-  className?: string;
-  item: NavItem | NavGroupItem;
-}
-
-const NavLinkIcon = ({ item, className }: Props) => {
+const NavLinkIcon = ({ item }: { item: NavItem | NavGroupItem}) => {
   if ('icon' in item && item.icon) {
-    return <IconSvg className={ className } name={ item.icon } boxSize="30px" flexShrink={ 0 }/>;
+    return <IconSvg name={ item.icon } boxSize="30px" flexShrink={ 0 }/>;
   }
   if ('iconComponent' in item && item.iconComponent) {
     const IconComponent = item.iconComponent;
-    return <IconComponent className={ className } size={ 30 }/>;
+    return <IconComponent size={ 30 }/>;
   }
 
   return null;
 };
 
-export default chakra(NavLinkIcon);
+export default NavLinkIcon;

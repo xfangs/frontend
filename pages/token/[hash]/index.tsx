@@ -1,22 +1,15 @@
-import type { GetServerSideProps, NextPage } from 'next';
+import type { NextPage } from 'next';
+import dynamic from 'next/dynamic';
 import React from 'react';
 
-import type { Route } from 'nextjs-routes';
 import type { Props } from 'nextjs/getServerSideProps';
-import * as gSSP from 'nextjs/getServerSideProps';
 import PageNextJs from 'nextjs/PageNextJs';
-import detectBotRequest from 'nextjs/utils/detectBotRequest';
-import fetchApi from 'nextjs/utils/fetchApi';
 
-import config from 'configs/app';
-import getQueryParamString from 'lib/router/getQueryParamString';
-import Token from 'ui/pages/Token';
+const Token = dynamic(() => import('ui/pages/Token'), { ssr: false });
 
-const pathname: Route['pathname'] = '/token/[hash]';
-
-const Page: NextPage<Props<typeof pathname>> = (props: Props<typeof pathname>) => {
+const Page: NextPage<Props> = (props: Props) => {
   return (
-    <PageNextJs pathname={ pathname } query={ props.query } apiData={ props.apiData }>
+    <PageNextJs pathname="/token/[hash]" query={ props }>
       <Token/>
     </PageNextJs>
   );
@@ -24,27 +17,4 @@ const Page: NextPage<Props<typeof pathname>> = (props: Props<typeof pathname>) =
 
 export default Page;
 
-export const getServerSideProps: GetServerSideProps<Props<typeof pathname>> = async(ctx) => {
-  const baseResponse = await gSSP.base<typeof pathname>(ctx);
-
-  if ('props' in baseResponse) {
-    if (
-      config.meta.seo.enhancedDataEnabled ||
-      (config.meta.og.enhancedDataEnabled && detectBotRequest(ctx.req)?.type === 'social_preview')
-    ) {
-      const tokenData = await fetchApi({
-        resource: 'general:token',
-        pathParams: { hash: getQueryParamString(ctx.query.hash) },
-        timeout: 500,
-      });
-      const apiData = tokenData ? {
-        ...tokenData,
-        symbol_or_name: tokenData.symbol ?? tokenData.name ?? '',
-      } : null;
-
-      (await baseResponse.props).apiData = apiData;
-    }
-  }
-
-  return baseResponse;
-};
+export { base as getServerSideProps } from 'nextjs/getServerSideProps';

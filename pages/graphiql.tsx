@@ -4,7 +4,6 @@ import React from 'react';
 
 import PageNextJs from 'nextjs/PageNextJs';
 
-import config from 'configs/app';
 import ContentLoader from 'ui/shared/ContentLoader';
 import PageTitle from 'ui/shared/Page/PageTitle';
 
@@ -17,9 +16,7 @@ const Page: NextPage = () => {
 
   return (
     <PageNextJs pathname="/graphiql">
-      <PageTitle
-        title={ config.meta.seo.enhancedDataEnabled ? `GraphiQL ${ config.chain.name } interface` : 'GraphQL playground' }
-      />
+      <PageTitle title="GraphQL playground"/>
       <GraphQL/>
     </PageNextJs>
   );
@@ -27,4 +24,4 @@ const Page: NextPage = () => {
 
 export default Page;
 
-export { graphIQl as getServerSideProps } from 'nextjs/getServerSideProps';
+export { base as getServerSideProps } from 'nextjs/getServerSideProps';

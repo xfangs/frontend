@@ -1,4 +1,4 @@
-import { Flex } from '@chakra-ui/react';
+import { Td, Tr, Flex, Skeleton } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
 import React from 'react';
 
@@ -6,11 +6,9 @@ import type { Block } from 'types/api/block';
 
 import config from 'configs/app';
 import getBlockTotalReward from 'lib/block/getBlockTotalReward';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { TableCell, TableRow } from 'toolkit/chakra/table';
-import BlockGasUsed from 'ui/shared/block/BlockGasUsed';
+import useTimeAgoIncrement from 'lib/hooks/useTimeAgoIncrement';
 import BlockEntity from 'ui/shared/entities/block/BlockEntity';
-import TimeWithTooltip from 'ui/shared/time/TimeWithTooltip';
+import Utilization from 'ui/shared/Utilization/Utilization';
 
 type Props = Block & {
   page: number;
@@ -18,53 +16,51 @@ type Props = Block & {
 };
 
 const AddressBlocksValidatedTableItem = (props: Props) => {
+  const timeAgo = useTimeAgoIncrement(props.timestamp, props.page === 1);
   const totalReward = getBlockTotalReward(props);
 
   return (
-    <TableRow>
-      <TableCell>
+    <Tr>
+      <Td>
         <BlockEntity
           isLoading={ props.isLoading }
           number={ props.height }
           noIcon
-          textStyle="sm"
+          fontSize="sm"
+          lineHeight={ 5 }
           fontWeight={ 700 }
         />
-      </TableCell>
-      <TableCell>
-        <TimeWithTooltip
-          timestamp={ props.timestamp }
-          enableIncrement={ props.page === 1 }
-          isLoading={ props.isLoading }
-          color="text.secondary"
-          display="inline-block"
-        />
-      </TableCell>
-      <TableCell>
-        <Skeleton loading={ props.isLoading } display="inline-block" fontWeight="500">
-          <span>{ props.transactions_count }</span>
+      </Td>
+      <Td>
+        <Skeleton isLoaded={ !props.isLoading } color="text_secondary" display="inline-block">
+          <span>{ timeAgo }</span>
         </Skeleton>
-      </TableCell>
-      <TableCell>
+      </Td>
+      <Td>
+        <Skeleton isLoaded={ !props.isLoading } display="inline-block" fontWeight="500">
+          <span>{ props.tx_count }</span>
+        </Skeleton>
+      </Td>
+      <Td>
         <Flex alignItems="center" columnGap={ 2 }>
-          <Skeleton loading={ props.isLoading } flexBasis="80px">
+          <Skeleton isLoaded={ !props.isLoading } flexBasis="80px">
             { BigNumber(props.gas_used || 0).toFormat() }
           </Skeleton>
-          <BlockGasUsed
-            gasUsed={ props.gas_used || undefined }
-            gasLimit={ props.gas_limit }
+          <Utilization
+            colorScheme="gray"
+            value={ BigNumber(props.gas_used || 0).dividedBy(BigNumber(props.gas_limit)).toNumber() }
             isLoading={ props.isLoading }
           />
         </Flex>
-      </TableCell>
-      { !config.UI.views.block.hiddenFields?.total_reward && !config.features.rollup.isEnabled && (
-        <TableCell isNumeric>
-          <Skeleton loading={ props.isLoading } display="inline-block">
+      </Td>
+      { !config.UI.views.block.hiddenFields?.total_reward && (
+        <Td isNumeric display="flex" justifyContent="end">
+          <Skeleton isLoaded={ !props.isLoading } display="inline-block">
             <span>{ totalReward.toFixed() }</span>
           </Skeleton>
-        </TableCell>
+        </Td>
       ) }
-    </TableRow>
+    </Tr>
   );
 };
 

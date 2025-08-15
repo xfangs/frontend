@@ -1,8 +1,9 @@
-import { throttle, clamp } from 'es-toolkit';
+import clamp from 'lodash/clamp';
+import throttle from 'lodash/throttle';
 import React from 'react';
 
 const ScrollDirectionContext = React.createContext<'up' | 'down' | null>(null);
-import { isBrowser } from 'toolkit/utils/isBrowser';
+import isBrowser from 'lib/isBrowser';
 
 const SCROLL_DIFF_THRESHOLD = 20;
 

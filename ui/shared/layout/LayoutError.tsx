@@ -11,26 +11,23 @@ import * as Layout from './components';
 
 const LayoutError = ({ children }: Props) => {
   return (
-    <Layout.Root content={ children }>
-      <Layout.Container>
-        <Layout.TopRow/>
-        <Layout.NavBar/>
-        <HeaderMobile/>
-        <Layout.MainArea>
-          <Layout.SideBar/>
-          <Layout.MainColumn>
-            <HeaderAlert/>
-            <HeaderDesktop/>
-            <AppErrorBoundary>
-              <main>
-                { children }
-              </main>
-            </AppErrorBoundary>
-          </Layout.MainColumn>
-        </Layout.MainArea>
-        <Layout.Footer/>
-      </Layout.Container>
-    </Layout.Root>
+    <Layout.Container>
+      <Layout.TopRow/>
+      <HeaderMobile/>
+      <Layout.MainArea>
+        <Layout.SideBar/>
+        <Layout.MainColumn>
+          <HeaderAlert/>
+          <HeaderDesktop/>
+          <AppErrorBoundary>
+            <main>
+              { children }
+            </main>
+          </AppErrorBoundary>
+        </Layout.MainColumn>
+      </Layout.MainArea>
+      <Layout.Footer/>
+    </Layout.Container>
   );
 };
 

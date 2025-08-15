@@ -1,48 +1,27 @@
-import { Box, Grid } from '@chakra-ui/react';
+import { Box, Grid, Heading, List, ListItem, Skeleton } from '@chakra-ui/react';
 import React, { useCallback, useState } from 'react';
 
-import type * as stats from '@blockscout/stats-types';
+import type { StatsChartsSection } from 'types/api/stats';
 import type { StatsIntervalIds } from 'types/client/stats';
 
-import useApiQuery from 'lib/api/useApiQuery';
-import { Heading } from 'toolkit/chakra/heading';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { apos } from 'toolkit/utils/htmlEntities';
+import { apos } from 'lib/html-entities';
 import EmptySearchResult from 'ui/shared/EmptySearchResult';
-import GasInfoTooltip from 'ui/shared/gas/GasInfoTooltip';
-import IconSvg from 'ui/shared/IconSvg';
 
 import ChartsLoadingErrorAlert from './ChartsLoadingErrorAlert';
 import ChartWidgetContainer from './ChartWidgetContainer';
 
 type Props = {
   filterQuery: string;
-  initialFilterQuery: string;
   isError: boolean;
   isPlaceholderData: boolean;
-  charts?: Array<stats.LineChartSection>;
+  charts?: Array<StatsChartsSection>;
   interval: StatsIntervalIds;
-};
+}
 
-const ChartsWidgetsList = ({ filterQuery, isError, isPlaceholderData, charts, interval, initialFilterQuery }: Props) => {
+const ChartsWidgetsList = ({ filterQuery, isError, isPlaceholderData, charts, interval }: Props) => {
   const [ isSomeChartLoadingError, setIsSomeChartLoadingError ] = useState(false);
   const isAnyChartDisplayed = charts?.some((section) => section.charts.length > 0);
   const isEmptyChartList = Boolean(filterQuery) && !isAnyChartDisplayed;
-  const sectionRef = React.useRef<HTMLUListElement | null>(null);
-
-  const shouldScrollToSection = Boolean(initialFilterQuery);
-
-  React.useEffect(() => {
-    if (shouldScrollToSection) {
-      sectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [ shouldScrollToSection ]);
-
-  const homeStatsQuery = useApiQuery('general:stats', {
-    queryOptions: {
-      refetchOnMount: false,
-    },
-  });
 
   const handleChartLoadingError = useCallback(
     () => setIsSomeChartLoadingError(true),
@@ -62,30 +41,25 @@ const ChartsWidgetsList = ({ filterQuery, isError, isPlaceholderData, charts, in
         <ChartsLoadingErrorAlert/>
       ) }
 
-      <section ref={ sectionRef }>
+      <List>
         {
           charts?.map((section) => (
-            <Box
+            <ListItem
               key={ section.id }
-              mb={{ base: 6, lg: 8 }}
+              mb={ 8 }
               _last={{
                 marginBottom: 0,
               }}
             >
-              <Skeleton loading={ isPlaceholderData } mb={{ base: 3, lg: 4 }} display="inline-flex" alignItems="center" columnGap={ 2 } id={ section.id }>
-                <Heading level="2" id={ section.id }>
+              <Skeleton isLoaded={ !isPlaceholderData } mb={ 4 } display="inline-block">
+                <Heading size="md" >
                   { section.title }
                 </Heading>
-                { section.id === 'gas' && homeStatsQuery.data && homeStatsQuery.data.gas_prices && (
-                  <GasInfoTooltip data={ homeStatsQuery.data } dataUpdatedAt={ homeStatsQuery.dataUpdatedAt }>
-                    <IconSvg name="info" boxSize={ 5 } display="block" cursor="pointer" color="icon.info" _hover={{ color: 'link.primary.hover' }}/>
-                  </GasInfoTooltip>
-                ) }
               </Skeleton>
 
               <Grid
                 templateColumns={{ lg: 'repeat(2, minmax(0, 1fr))' }}
-                gap={{ base: 3, lg: 4 }}
+                gap={ 4 }
               >
                 { section.charts.map((chart) => (
                   <ChartWidgetContainer
@@ -97,14 +71,13 @@ const ChartsWidgetsList = ({ filterQuery, isError, isPlaceholderData, charts, in
                     units={ chart.units || undefined }
                     isPlaceholderData={ isPlaceholderData }
                     onLoadingError={ handleChartLoadingError }
-                    href={{ pathname: '/stats/[id]', query: { id: chart.id } }}
                   />
                 )) }
               </Grid>
-            </Box>
+            </ListItem>
           ))
         }
-      </section>
+      </List>
     </Box>
   );
 };

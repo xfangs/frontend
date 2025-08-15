@@ -1,8 +1,5 @@
-import { Text, chakra } from '@chakra-ui/react';
+import { Text, Alert, Link, chakra } from '@chakra-ui/react';
 import React from 'react';
-
-import { Alert } from 'toolkit/chakra/alert';
-import { Link } from 'toolkit/chakra/link';
 
 interface Props {
   className?: string;

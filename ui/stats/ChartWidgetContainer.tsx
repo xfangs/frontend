@@ -1,14 +1,11 @@
-import { chakra } from '@chakra-ui/react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 
-import { Resolution } from '@blockscout/stats-types';
 import type { StatsIntervalIds } from 'types/client/stats';
 
-import type { Route } from 'nextjs-routes';
-
-import useChartQuery from 'ui/shared/chart/useChartQuery';
+import useApiQuery from 'lib/api/useApiQuery';
 
 import ChartWidget from '../shared/chart/ChartWidget';
+import { STATS_INTERVALS } from './constants';
 
 type Props = {
   id: string;
@@ -18,42 +15,51 @@ type Props = {
   interval: StatsIntervalIds;
   onLoadingError: () => void;
   isPlaceholderData: boolean;
-  className?: string;
-  href?: Route;
-};
+}
 
-const ChartWidgetContainer = ({
-  id,
-  title,
-  description,
-  interval,
-  onLoadingError,
-  units,
-  isPlaceholderData,
-  className,
-  href,
-}: Props) => {
-  const { items, lineQuery } = useChartQuery(id, Resolution.DAY, interval, !isPlaceholderData);
+function formatDate(date: Date) {
+  return date.toISOString().substring(0, 10);
+}
+
+const ChartWidgetContainer = ({ id, title, description, interval, onLoadingError, units, isPlaceholderData }: Props) => {
+  const selectedInterval = STATS_INTERVALS[interval];
+
+  const endDate = selectedInterval.start ? formatDate(new Date()) : undefined;
+  const startDate = selectedInterval.start ? formatDate(selectedInterval.start) : undefined;
+
+  const { data, isPending, isError } = useApiQuery('stats_line', {
+    pathParams: { id },
+    queryParams: {
+      from: startDate,
+      to: endDate,
+    },
+    queryOptions: {
+      enabled: !isPlaceholderData,
+      refetchOnMount: false,
+    },
+  });
+
+  const items = useMemo(() => data?.chart?.map((item) => {
+    return { date: new Date(item.date), value: Number(item.value) };
+  }), [ data ]);
 
   useEffect(() => {
-    if (lineQuery.isError) {
+    if (isError) {
       onLoadingError();
     }
-  }, [ lineQuery.isError, onLoadingError ]);
+  }, [ isError, onLoadingError ]);
 
   return (
     <ChartWidget
-      isError={ lineQuery.isError }
+      isError={ isError }
       items={ items }
       title={ title }
       units={ units }
       description={ description }
-      isLoading={ lineQuery.isPlaceholderData }
+      isLoading={ isPending }
       minH="230px"
-      className={ className }
-      href={ href }
     />
   );
 };
 
-export default chakra(ChartWidgetContainer);
+export default ChartWidgetContainer;

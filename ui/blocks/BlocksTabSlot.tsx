@@ -1,16 +1,11 @@
-import { Flex, Box, Text } from '@chakra-ui/react';
+import { Flex, Box, Text, Skeleton } from '@chakra-ui/react';
 import React from 'react';
 
 import type { PaginationParams } from 'ui/shared/pagination/types';
 
-import { route } from 'nextjs-routes';
-
 import useApiQuery from 'lib/api/useApiQuery';
+import { nbsp } from 'lib/html-entities';
 import { HOMEPAGE_STATS } from 'stubs/stats';
-import { Link } from 'toolkit/chakra/link';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { nbsp } from 'toolkit/utils/htmlEntities';
-import IconSvg from 'ui/shared/IconSvg';
 import Pagination from 'ui/shared/pagination/Pagination';
 
 interface Props {
@@ -18,7 +13,7 @@ interface Props {
 }
 
 const BlocksTabSlot = ({ pagination }: Props) => {
-  const statsQuery = useApiQuery('general:stats', {
+  const statsQuery = useApiQuery('homepage_stats', {
     queryOptions: {
       placeholderData: HOMEPAGE_STATS,
     },
@@ -29,17 +24,13 @@ const BlocksTabSlot = ({ pagination }: Props) => {
       { statsQuery.data?.network_utilization_percentage !== undefined && (
         <Box>
           <Text as="span" fontSize="sm">
-            Network utilization (last 50 blocks):{ nbsp }
+              Network utilization (last 50 blocks):{ nbsp }
           </Text>
-          <Skeleton display="inline-block" fontSize="sm" color="blue.400" fontWeight={ 600 } loading={ statsQuery.isPlaceholderData }>
+          <Skeleton display="inline-block" fontSize="sm" color="blue.400" fontWeight={ 600 } isLoaded={ !statsQuery.isPlaceholderData }>
             <span>{ statsQuery.data.network_utilization_percentage.toFixed(2) }%</span>
           </Skeleton>
         </Box>
       ) }
-      <Link href={ route({ pathname: '/block/countdown' }) }>
-        <IconSvg name="hourglass_slim" boxSize={ 5 } mr={ 2 }/>
-        <span>Block countdown</span>
-      </Link>
       <Pagination my={ 1 } { ...pagination }/>
     </Flex>
   );

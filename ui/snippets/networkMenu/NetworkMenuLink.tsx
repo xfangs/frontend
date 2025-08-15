@@ -1,18 +1,19 @@
-import { Box, Text, chakra } from '@chakra-ui/react';
+import { Box, Flex, Text, Image, useColorModeValue } from '@chakra-ui/react';
 import React from 'react';
 
 import type { FeaturedNetwork } from 'types/networks';
 
-import { useColorModeValue } from 'toolkit/chakra/color-mode';
-import { Image } from 'toolkit/chakra/image';
 import IconSvg from 'ui/shared/IconSvg';
+
+import useColors from './useColors';
 
 interface Props extends FeaturedNetwork {
   isActive?: boolean;
   isMobile?: boolean;
 }
 
-const NetworkMenuLink = ({ title, icon, isActive: isActiveProp, isMobile, url, invertIconInDarkMode }: Props) => {
+const NetworkMenuLink = ({ title, icon, isActive, isMobile, url, invertIconInDarkMode }: Props) => {
+  const colors = useColors();
   const darkModeFilter = { filter: 'brightness(0) invert(1)' };
   const style = useColorModeValue({}, invertIconInDarkMode ? darkModeFilter : {});
 
@@ -22,39 +23,24 @@ const NetworkMenuLink = ({ title, icon, isActive: isActiveProp, isMobile, url, i
     <IconSvg
       name="networks/icon-placeholder"
       boxSize="30px"
-      color={{ base: 'blackAlpha.100', _dark: 'whiteAlpha.300' }}
+      color={ colors.iconPlaceholder.default }
     />
   );
 
-  const isActive = (() => {
-    if (isActiveProp !== undefined) {
-      return isActiveProp;
-    }
-
-    try {
-      const itemOrigin = new URL(url).origin;
-      const currentOrigin = window.location.origin;
-
-      return itemOrigin === currentOrigin;
-    } catch (error) {
-      return false;
-    }
-  })();
-
   return (
     <Box as="li" listStyleType="none">
-      <chakra.a
-        display="flex"
+      <Flex
+        as="a"
         href={ url }
-        px={ 3 }
-        py="9px"
+        px={ isMobile ? 3 : 4 }
+        py={ 2 }
         alignItems="center"
         cursor="pointer"
         pointerEvents={ isActive ? 'none' : 'initial' }
         borderRadius="base"
-        color={ isActive ? { base: 'blackAlpha.900', _dark: 'whiteAlpha.900' } : { base: 'gray.600', _dark: 'gray.400' } }
-        bgColor={ isActive ? { base: 'blue.50', _dark: 'whiteAlpha.100' } : 'transparent' }
-        _hover={{ color: isActive ? { base: 'blackAlpha.900', _dark: 'whiteAlpha.900' } : 'link.primary.hover' }}
+        color={ isActive ? colors.text.active : colors.text.default }
+        bgColor={ isActive ? colors.bg.active : colors.bg.default }
+        _hover={{ color: isActive ? colors.text.active : colors.text.hover }}
       >
         { iconEl }
         <Text
@@ -73,7 +59,7 @@ const NetworkMenuLink = ({ title, icon, isActive: isActiveProp, isMobile, url, i
             marginLeft="auto"
           />
         ) }
-      </chakra.a>
+      </Flex>
     </Box>
   );
 };

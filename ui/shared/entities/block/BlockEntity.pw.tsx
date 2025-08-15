@@ -1,21 +1,24 @@
+import { test, expect } from '@playwright/experimental-ct-react';
 import React from 'react';
 
-import { test, expect } from 'playwright/lib';
+import TestApp from 'playwright/TestApp';
 
 import BlockEntity from './BlockEntity';
 
-const variants = [ 'subheading', 'content' ] as const;
+const iconSizes = [ 'md', 'lg' ];
 
 test.use({ viewport: { width: 180, height: 30 } });
 
 test.describe('icon sizes', () => {
-  variants.forEach((variant) => {
-    test(`${ variant }`, async({ render }) => {
-      const component = await render(
-        <BlockEntity
-          number={ 17943507 }
-          variant={ variant }
-        />,
+  iconSizes.forEach((size) => {
+    test(size, async({ mount }) => {
+      const component = await mount(
+        <TestApp>
+          <BlockEntity
+            number={ 17943507 }
+            iconSize={ size }
+          />
+        </TestApp>,
       );
 
       await expect(component).toHaveScreenshot();
@@ -23,23 +26,27 @@ test.describe('icon sizes', () => {
   });
 });
 
-test('loading', async({ render }) => {
-  const component = await render(
-    <BlockEntity
-      number={ 17943507 }
-      isLoading
-    />,
+test('loading', async({ mount }) => {
+  const component = await mount(
+    <TestApp>
+      <BlockEntity
+        number={ 17943507 }
+        isLoading
+      />
+    </TestApp>,
   );
 
   await expect(component).toHaveScreenshot();
 });
 
-test('external link +@dark-mode', async({ render }) => {
-  const component = await render(
-    <BlockEntity
-      number={ 17943507 }
-      isExternal
-    />,
+test('external link +@dark-mode', async({ mount }) => {
+  const component = await mount(
+    <TestApp>
+      <BlockEntity
+        number={ 17943507 }
+        isExternal
+      />
+    </TestApp>,
   );
 
   await component.getByText('17943507').hover();
@@ -47,24 +54,28 @@ test('external link +@dark-mode', async({ render }) => {
   await expect(component).toHaveScreenshot();
 });
 
-test('long number', async({ render }) => {
-  const component = await render(
-    <BlockEntity
-      number={ 1794350723452223 }
-    />,
+test('long number', async({ mount }) => {
+  const component = await mount(
+    <TestApp>
+      <BlockEntity
+        number={ 1794350723452223 }
+      />
+    </TestApp>,
   );
 
   await expect(component).toHaveScreenshot();
 });
 
-test('customization', async({ render }) => {
-  const component = await render(
-    <BlockEntity
-      number={ 17943507 }
-      p={ 3 }
-      borderWidth="1px"
-      borderColor="blue.700"
-    />,
+test('customization', async({ mount }) => {
+  const component = await mount(
+    <TestApp>
+      <BlockEntity
+        number={ 17943507 }
+        p={ 3 }
+        borderWidth="1px"
+        borderColor="blue.700"
+      />
+    </TestApp>,
   );
 
   await expect(component).toHaveScreenshot();

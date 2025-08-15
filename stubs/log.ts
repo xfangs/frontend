@@ -31,5 +31,5 @@ export const LOG: Log = {
     '0x000000000000000000000000302fd86163cb9ad5533b3952dafa3b633a82bc51',
     null,
   ],
-  transaction_hash: TX_HASH,
+  tx_hash: TX_HASH,
 };

@@ -1,33 +1,39 @@
+import { MenuItem, chakra, useDisclosure } from '@chakra-ui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
 import React from 'react';
 
-import type { ItemProps } from '../types';
 import type { Address } from 'types/api/address';
 import type { Transaction } from 'types/api/transaction';
 
 import { getResourceKey } from 'lib/api/useApiQuery';
 import getPageType from 'lib/mixpanel/getPageType';
-import { MenuItem } from 'toolkit/chakra/menu';
-import { useDisclosure } from 'toolkit/hooks/useDisclosure';
 import AddressModal from 'ui/privateTags/AddressModal/AddressModal';
 import TransactionModal from 'ui/privateTags/TransactionModal/TransactionModal';
 import IconSvg from 'ui/shared/IconSvg';
-import AuthGuard from 'ui/snippets/auth/AuthGuard';
 
-import ButtonItem from '../parts/ButtonItem';
-
-interface Props extends ItemProps {
-  entityType?: 'address' | 'tx';
+interface Props {
+  className?: string;
+  hash: string;
+  onBeforeClick: () => boolean;
+  type?: 'address' | 'tx';
 }
 
-const PrivateTagMenuItem = ({ hash, entityType = 'address', type }: Props) => {
+const PrivateTagMenuItem = ({ className, hash, onBeforeClick, type = 'address' }: Props) => {
   const modal = useDisclosure();
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const queryKey = getResourceKey(entityType === 'tx' ? 'general:tx' : 'general:address', { pathParams: { hash } });
+  const queryKey = getResourceKey(type === 'tx' ? 'tx' : 'address', { pathParams: { hash } });
   const queryData = queryClient.getQueryData<Address | Transaction>(queryKey);
+
+  const handleClick = React.useCallback(() => {
+    if (!onBeforeClick()) {
+      return;
+    }
+
+    modal.onOpen();
+  }, [ modal, onBeforeClick ]);
 
   const handleAddPrivateTag = React.useCallback(async() => {
     await queryClient.refetchQueries({ queryKey });
@@ -38,7 +44,7 @@ const PrivateTagMenuItem = ({ hash, entityType = 'address', type }: Props) => {
     queryData &&
     (
       ('private_tags' in queryData && queryData.private_tags?.length) ||
-      ('transaction_tag' in queryData && queryData.transaction_tag)
+      ('tx_tag' in queryData && queryData.tx_tag)
     )
   ) {
     return null;
@@ -46,42 +52,19 @@ const PrivateTagMenuItem = ({ hash, entityType = 'address', type }: Props) => {
 
   const pageType = getPageType(router.pathname);
   const modalProps = {
-    open: modal.open,
-    onOpenChange: modal.onOpenChange,
+    isOpen: modal.isOpen,
+    onClose: modal.onClose,
     onSuccess: handleAddPrivateTag,
     pageType,
   };
 
-  const element = (() => {
-    switch (type) {
-      case 'button': {
-        return (
-          <AuthGuard onAuthSuccess={ modal.onOpen }>
-            { ({ onClick }) => (
-              <ButtonItem label="Add private tag" icon="privattags" onClick={ onClick }/>
-            ) }
-          </AuthGuard>
-        );
-      }
-      case 'menu_item': {
-        return (
-          <AuthGuard onAuthSuccess={ modal.onOpen }>
-            { ({ onClick }) => (
-              <MenuItem onClick={ onClick } value="add-private-tag">
-                <IconSvg name="privattags" boxSize={ 6 }/>
-                <span>Add private tag</span>
-              </MenuItem>
-            ) }
-          </AuthGuard>
-        );
-      }
-    }
-  })();
-
   return (
     <>
-      { element }
-      { entityType === 'tx' ?
+      <MenuItem className={ className } onClick={ handleClick }>
+        <IconSvg name="privattags" boxSize={ 6 } mr={ 2 }/>
+        <span>Add private tag</span>
+      </MenuItem>
+      { type === 'tx' ?
         <TransactionModal { ...modalProps } data={{ transaction_hash: hash }}/> :
         <AddressModal { ...modalProps } data={{ address_hash: hash }}/>
       }
@@ -89,4 +72,4 @@ const PrivateTagMenuItem = ({ hash, entityType = 'address', type }: Props) => {
   );
 };
 
-export default React.memo(PrivateTagMenuItem);
+export default React.memo(chakra(PrivateTagMenuItem));

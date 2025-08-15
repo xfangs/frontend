@@ -3,7 +3,7 @@ import React from 'react';
 
 import type { Transaction } from 'types/api/transaction';
 
-import { Badge } from 'toolkit/chakra/badge';
+import Tag from 'ui/shared/chakra/Tag';
 
 interface Props {
   tx: Transaction;
@@ -23,15 +23,16 @@ const TxWatchListTags = ({ tx, isLoading }: Props) => {
   return (
     <Flex columnGap={ 2 } rowGap={ 2 } flexWrap="wrap" overflow="hidden" maxW="100%">
       { tags.map((tag) => (
-        <Badge
+        <Tag
           key={ tag.label }
-          loading={ isLoading }
-          truncated
-          maxW={{ base: '115px', lg: 'initial' }}
-          colorPalette="gray"
+          isLoading={ isLoading }
+          isTruncated
+          // maxW={{ base: '115px', lg: 'initial' }}
+          colorScheme="gray"
+          variant="subtle"
         >
           { tag.display_name }
-        </Badge>
+        </Tag>
       )) }
     </Flex>
   );

@@ -1,45 +1,32 @@
-import { Box, chakra } from '@chakra-ui/react';
+import { Box, chakra, Table, Tbody, Tr, Th, Skeleton, Show, Hide } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import type { FormEvent } from 'react';
 import React from 'react';
 
-import { SEARCH_RESULT_TYPES } from 'types/api/search';
-import type { SearchResultItem } from 'types/client/search';
-
-import config from 'configs/app';
-import { useSettingsContext } from 'lib/contexts/settings';
-import getQueryParamString from 'lib/router/getQueryParamString';
-import removeQueryParam from 'lib/router/removeQueryParam';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { TableBody, TableColumnHeader, TableHeaderSticky, TableRoot, TableRow } from 'toolkit/chakra/table';
-import * as regexp from 'toolkit/utils/regexp';
 import useMarketplaceApps from 'ui/marketplace/useMarketplaceApps';
 import SearchResultListItem from 'ui/searchResults/SearchResultListItem';
 import SearchResultsInput from 'ui/searchResults/SearchResultsInput';
 import SearchResultTableItem from 'ui/searchResults/SearchResultTableItem';
-import ActionBar, { ACTION_BAR_HEIGHT_DESKTOP } from 'ui/shared/ActionBar';
+import ActionBar from 'ui/shared/ActionBar';
 import AppErrorBoundary from 'ui/shared/AppError/AppErrorBoundary';
 import ContentLoader from 'ui/shared/ContentLoader';
 import DataFetchAlert from 'ui/shared/DataFetchAlert';
 import * as Layout from 'ui/shared/layout/components';
 import PageTitle from 'ui/shared/Page/PageTitle';
 import Pagination from 'ui/shared/pagination/Pagination';
-import type { SearchResultAppItem } from 'ui/shared/search/utils';
+import Thead from 'ui/shared/TheadSticky';
 import HeaderAlert from 'ui/snippets/header/HeaderAlert';
 import HeaderDesktop from 'ui/snippets/header/HeaderDesktop';
 import HeaderMobile from 'ui/snippets/header/HeaderMobile';
-import SearchBarSuggestBlockCountdown from 'ui/snippets/searchBar/SearchBarSuggest/SearchBarSuggestBlockCountdown';
 import useSearchQuery from 'ui/snippets/searchBar/useSearchQuery';
 
 const SearchResultsPageContent = () => {
   const router = useRouter();
-  const withRedirectCheck = getQueryParamString(router.query.redirect) === 'true';
-  const { query, redirectCheckQuery, searchTerm, debouncedSearchTerm, handleSearchTermChange } = useSearchQuery(withRedirectCheck);
+  const { query, redirectCheckQuery, searchTerm, debouncedSearchTerm, handleSearchTermChange } = useSearchQuery();
   const { data, isError, isPlaceholderData, pagination } = query;
-  const [ showContent, setShowContent ] = React.useState(!withRedirectCheck);
+  const [ showContent, setShowContent ] = React.useState(false);
 
   const marketplaceApps = useMarketplaceApps(debouncedSearchTerm);
-  const settingsContext = useSettingsContext();
 
   React.useEffect(() => {
     if (showContent) {
@@ -65,122 +52,75 @@ const SearchResultsPageContent = () => {
           router.replace({ pathname: '/tx/[hash]', query: { hash: redirectCheckQuery.data.parameter } });
           return;
         }
-        case 'user_operation': {
-          if (config.features.userOps.isEnabled) {
-            router.replace({ pathname: '/op/[hash]', query: { hash: redirectCheckQuery.data.parameter } });
-            return;
-          }
-          break;
-        }
-        case 'blob': {
-          if (config.features.dataAvailability.isEnabled) {
-            router.replace({ pathname: '/blobs/[hash]', query: { hash: redirectCheckQuery.data.parameter } });
-            return;
-          }
-          break;
-        }
       }
     }
 
-    if (!redirectCheckQuery.isPending) {
-      setShowContent(true);
-      removeQueryParam(router, 'redirect');
-    }
+    !redirectCheckQuery.isPending && setShowContent(true);
   }, [ redirectCheckQuery, router, debouncedSearchTerm, showContent ]);
 
   const handleSubmit = React.useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
   }, [ ]);
 
-  const isLoading = marketplaceApps.isPlaceholderData || isPlaceholderData;
-
-  const displayedItems: Array<SearchResultItem | SearchResultAppItem> = React.useMemo(() => {
-    const apiData = (data?.items || []).filter((item) => {
-      if (!SEARCH_RESULT_TYPES[item.type]) {
-        return false;
-      }
-      if (!config.features.userOps.isEnabled && item.type === 'user_operation') {
-        return false;
-      }
-      if (!config.features.dataAvailability.isEnabled && item.type === 'blob') {
-        return false;
-      }
-      if (!config.features.nameService.isEnabled && item.type === 'ens_domain') {
-        return false;
-      }
-      if (!config.features.tac.isEnabled && item.type === 'tac_operation') {
-        return false;
-      }
-      return true;
-    });
-
-    const futureBlockItem = !isPlaceholderData &&
-      pagination.page === 1 &&
-      !data?.next_page_params &&
-      apiData.length > 0 &&
-      !apiData.some(({ type }) => type === 'block') &&
-      regexp.BLOCK_HEIGHT.test(debouncedSearchTerm) ?
-      {
-        type: 'block' as const,
-        block_type: 'block' as const,
-        block_number: debouncedSearchTerm,
-        block_hash: '',
-        timestamp: undefined,
-      } : undefined;
-
-    return [
-      ...(pagination.page === 1 && !isLoading ? marketplaceApps.displayedApps.map((item) => ({ type: 'app' as const, app: item })) : []),
-      futureBlockItem,
-      ...apiData,
-    ].filter(Boolean);
-
-  }, [ data?.items, data?.next_page_params, isPlaceholderData, pagination.page, debouncedSearchTerm, marketplaceApps.displayedApps, isLoading ]);
-
   const content = (() => {
     if (isError) {
       return <DataFetchAlert/>;
     }
 
-    if (!displayedItems.length) {
+    const hasData = data?.items.length || (pagination.page === 1 && marketplaceApps.displayedApps.length);
+
+    if (!hasData) {
       return null;
     }
 
     return (
       <>
-        <Box hideFrom="lg">
-          { displayedItems.map((item, index) => (
+        <Show below="lg" ssr={ false }>
+          { pagination.page === 1 && marketplaceApps.displayedApps.map((item, index) => (
             <SearchResultListItem
-              key={ (isLoading ? 'placeholder_' : 'actual_') + index }
-              data={ item }
+              key={ 'actual_' + index }
+              data={{ type: 'app', app: item }}
               searchTerm={ debouncedSearchTerm }
-              isLoading={ isLoading }
-              addressFormat={ settingsContext?.addressFormat }
             />
           )) }
-        </Box>
-        <Box hideBelow="lg">
-          <TableRoot fontWeight={ 500 }>
-            <TableHeaderSticky top={ pagination.isVisible ? ACTION_BAR_HEIGHT_DESKTOP : 0 }>
-              <TableRow>
-                <TableColumnHeader width="30%">Search result</TableColumnHeader>
-                <TableColumnHeader width="35%"/>
-                <TableColumnHeader width="35%" pr={ 10 }/>
-                <TableColumnHeader width="150px">Category</TableColumnHeader>
-              </TableRow>
-            </TableHeaderSticky>
-            <TableBody>
-              { displayedItems.map((item, index) => (
+          { data && data.items.map((item, index) => (
+            <SearchResultListItem
+              key={ (isPlaceholderData ? 'placeholder_' : 'actual_') + index }
+              data={ item }
+              searchTerm={ debouncedSearchTerm }
+              isLoading={ isPlaceholderData }
+            />
+          )) }
+        </Show>
+        <Hide below="lg" ssr={ false }>
+          <Table variant="simple" size="md" fontWeight={ 500 }>
+            <Thead top={ pagination.isVisible ? 80 : 0 }>
+              <Tr>
+                <Th width="30%">Search result</Th>
+                <Th width="35%"/>
+                <Th width="35%" pr={ 10 }/>
+                <Th width="150px">Category</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              { pagination.page === 1 && marketplaceApps.displayedApps.map((item, index) => (
                 <SearchResultTableItem
-                  key={ (isLoading ? 'placeholder_' : 'actual_') + index }
-                  data={ item }
+                  key={ 'actual_' + index }
+                  data={{ type: 'app', app: item }}
                   searchTerm={ debouncedSearchTerm }
-                  isLoading={ isLoading }
-                  addressFormat={ settingsContext?.addressFormat }
                 />
               )) }
-            </TableBody>
-          </TableRoot>
-        </Box>
+              { data && data.items.map((item, index) => (
+                <SearchResultTableItem
+                  key={ (isPlaceholderData ? 'placeholder_' : 'actual_') + index }
+                  data={ item }
+                  searchTerm={ debouncedSearchTerm }
+                  isLoading={ isPlaceholderData }
+                />
+              )) }
+            </Tbody>
+          </Table>
+        </Hide>
       </>
     );
   })();
@@ -190,24 +130,20 @@ const SearchResultsPageContent = () => {
       return null;
     }
 
-    const resultsCount = pagination.page === 1 && !data?.next_page_params ? displayedItems.length : '50+';
+    const resultsCount = pagination.page === 1 && !data?.next_page_params ? (data?.items.length || 0) + marketplaceApps.displayedApps.length : '50+';
 
-    const text = isLoading && pagination.page === 1 ? (
-      <Skeleton loading h={ 6 } w="280px" borderRadius="full" mb={ pagination.isVisible ? 0 : 6 }/>
+    const text = isPlaceholderData && pagination.page === 1 ? (
+      <Skeleton h={ 6 } w="280px" borderRadius="full" mb={ pagination.isVisible ? 0 : 6 }/>
     ) : (
       (
-        <>
-          <Box mb={ pagination.isVisible ? 0 : 6 } lineHeight="32px">
-            <span>Found </span>
-            <chakra.span fontWeight={ 700 }>
-              { resultsCount }
-            </chakra.span>
-            <span> matching result{ (((displayedItems.length || 0) + marketplaceApps.displayedApps.length) > 1) || pagination.page > 1 ? 's' : '' } for </span>
-            “<chakra.span fontWeight={ 700 }>{ debouncedSearchTerm }</chakra.span>”
-          </Box>
-          { resultsCount === 0 && regexp.BLOCK_HEIGHT.test(debouncedSearchTerm) &&
-            <SearchBarSuggestBlockCountdown blockHeight={ debouncedSearchTerm } mt={ -4 }/> }
-        </>
+        <Box mb={ pagination.isVisible ? 0 : 6 } lineHeight="32px">
+          <span>Found </span>
+          <chakra.span fontWeight={ 700 }>
+            { resultsCount }
+          </chakra.span>
+          <span> matching result{ (((data?.items.length || 0) + marketplaceApps.displayedApps.length) > 1) || pagination.page > 1 ? 's' : '' } for </span>
+          “<chakra.span fontWeight={ 700 }>{ debouncedSearchTerm }</chakra.span>”
+        </Box>
       )
     );
 
@@ -217,9 +153,9 @@ const SearchResultsPageContent = () => {
 
     return (
       <>
-        <Box hideFrom="lg">{ text }</Box>
+        <Box display={{ base: 'block', lg: 'none' }}>{ text }</Box>
         <ActionBar mt={{ base: 0, lg: -6 }} alignItems="center">
-          <Box hideBelow="lg">{ text }</Box>
+          <Box display={{ base: 'none', lg: 'block' }}>{ text }</Box>
           <Pagination { ...pagination }/>
         </ActionBar>
       </>
@@ -253,7 +189,7 @@ const SearchResultsPageContent = () => {
           <HeaderAlert/>
           <HeaderDesktop renderSearchBar={ renderSearchBar }/>
           <AppErrorBoundary>
-            <Layout.Content flexGrow={ 0 }>
+            <Layout.Content>
               { pageContent }
             </Layout.Content>
           </AppErrorBoundary>

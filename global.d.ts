@@ -1,15 +1,14 @@
-import type { MultichainConfig } from 'types/multichain';
-import type { WalletProvider } from 'types/web3';
+import type { WindowProvider } from 'wagmi';
 
 type CPreferences = {
   zone: string;
   width: string;
   height: string;
-};
+}
 
 declare global {
   export interface Window {
-    ethereum?: WalletProvider | undefined;
+    ethereum?: WindowProvider;
     coinzilla_display: Array<CPreferences>;
     ga?: {
       getAll: () => Array<{ get: (prop: string) => string }>;
@@ -20,7 +19,6 @@ declare global {
     };
     abkw: string;
     __envs: Record<string, string>;
-    __multichainConfig: MultichainConfig;
   }
 
   namespace NodeJS {
@@ -29,5 +27,3 @@ declare global {
     }
   }
 }
-
-export {};

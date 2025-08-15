@@ -1,8 +1,8 @@
 export interface VerifiedContractsSorting {
-  sort: 'balance' | 'transactions_count';
+  sort: 'balance' | 'txs_count';
   order: 'asc' | 'desc';
 }
 
 export type VerifiedContractsSortingField = VerifiedContractsSorting['sort'];
 
-export type VerifiedContractsSortingValue = `${ VerifiedContractsSortingField }-${ VerifiedContractsSorting['order'] }` | 'default';
+export type VerifiedContractsSortingValue = `${ VerifiedContractsSortingField }-${ VerifiedContractsSorting['order'] }`;

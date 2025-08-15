@@ -1,5 +1,5 @@
 import type { TimeChartItem } from '../types';
 
-export const sortByDateDesc = (a: Pick<TimeChartItem, 'date'>, b: Pick<TimeChartItem, 'date'>) => {
+export const sortByDateDesc = (a: TimeChartItem, b: TimeChartItem) => {
   return a.date.getTime() - b.date.getTime();
 };

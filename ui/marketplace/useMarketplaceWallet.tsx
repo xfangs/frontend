@@ -1,16 +1,14 @@
 import type { TypedData } from 'abitype';
 import { useCallback } from 'react';
 import type { Account, SignTypedDataParameters } from 'viem';
-import { useAccount, useSendTransaction, useSwitchChain, useSignMessage, useSignTypedData } from 'wagmi';
+import { useAccount, useSendTransaction, useSwitchNetwork, useNetwork, useSignMessage, useSignTypedData } from 'wagmi';
 
 import config from 'configs/app';
-import useRewardsActivity from 'lib/hooks/useRewardsActivity';
-import * as mixpanel from 'lib/mixpanel/index';
 
 type SendTransactionArgs = {
   chainId?: number;
   mode?: 'prepared';
-  to: `0x${ string }` | null;
+  to: string;
 };
 
 export type SignTypedDataArgs<
@@ -22,44 +20,31 @@ export type SignTypedDataArgs<
   TPrimaryType extends string = string,
 > = SignTypedDataParameters<TTypedData, TPrimaryType, Account>;
 
-export default function useMarketplaceWallet(appId: string) {
-  const { address, chainId } = useAccount();
+export default function useMarketplaceWallet() {
+  const { address } = useAccount();
+  const { chain } = useNetwork();
   const { sendTransactionAsync } = useSendTransaction();
   const { signMessageAsync } = useSignMessage();
   const { signTypedDataAsync } = useSignTypedData();
-  const { switchChainAsync } = useSwitchChain();
-  const { trackTransaction, trackTransactionConfirm } = useRewardsActivity();
-
-  const logEvent = useCallback((event: mixpanel.EventPayload<mixpanel.EventTypes.WALLET_ACTION>['Action']) => {
-    mixpanel.logEvent(
-      mixpanel.EventTypes.WALLET_ACTION,
-      { Action: event, Address: address, AppId: appId },
-    );
-  }, [ address, appId ]);
+  const { switchNetworkAsync } = useSwitchNetwork({ chainId: Number(config.chain.id) });
 
   const switchNetwork = useCallback(async() => {
-    if (Number(config.chain.id) !== chainId) {
-      await switchChainAsync?.({ chainId: Number(config.chain.id) });
+    if (Number(config.chain.id) !== chain?.id) {
+      await switchNetworkAsync?.();
     }
-  }, [ chainId, switchChainAsync ]);
+  }, [ chain, switchNetworkAsync ]);
 
   const sendTransaction = useCallback(async(transaction: SendTransactionArgs) => {
     await switchNetwork();
-    const activityResponse = await trackTransaction(address ?? '', transaction.to ?? '');
     const tx = await sendTransactionAsync(transaction);
-    if (activityResponse?.token) {
-      await trackTransactionConfirm(tx, activityResponse.token);
-    }
-    logEvent('Send Transaction');
-    return tx;
-  }, [ sendTransactionAsync, switchNetwork, logEvent, trackTransaction, trackTransactionConfirm, address ]);
+    return tx.hash;
+  }, [ sendTransactionAsync, switchNetwork ]);
 
   const signMessage = useCallback(async(message: string) => {
     await switchNetwork();
     const signature = await signMessageAsync({ message });
-    logEvent('Sign Message');
     return signature;
-  }, [ signMessageAsync, switchNetwork, logEvent ]);
+  }, [ signMessageAsync, switchNetwork ]);
 
   const signTypedData = useCallback(async(typedData: SignTypedDataArgs) => {
     await switchNetwork();
@@ -67,9 +52,8 @@ export default function useMarketplaceWallet(appId: string) {
       typedData.domain.chainId = Number(typedData.domain.chainId);
     }
     const signature = await signTypedDataAsync(typedData);
-    logEvent('Sign Typed Data');
     return signature;
-  }, [ signTypedDataAsync, switchNetwork, logEvent ]);
+  }, [ signTypedDataAsync, switchNetwork ]);
 
   return {
     address,

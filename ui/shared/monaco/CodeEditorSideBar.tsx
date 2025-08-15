@@ -1,13 +1,12 @@
-import { Box } from '@chakra-ui/react';
-import { throttle } from 'es-toolkit';
+import type { HTMLChakraProps } from '@chakra-ui/react';
+import { Box, Tab, TabList, TabPanel, TabPanels, Tabs, useBoolean } from '@chakra-ui/react';
+import _throttle from 'lodash/throttle';
 import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import React from 'react';
 
 import type { File, Monaco } from './types';
 
-import type { TabsTriggerProps } from 'toolkit/chakra/tabs';
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'toolkit/chakra/tabs';
-import { shift, cmd } from 'toolkit/utils/htmlEntities';
+import { shift, cmd } from 'lib/html-entities';
 
 import CodeEditorFileExplorer from './CodeEditorFileExplorer';
 import CodeEditorSearch from './CodeEditorSearch';
@@ -27,14 +26,14 @@ export const CONTAINER_WIDTH = 250;
 const CodeEditorSideBar = ({ onFileSelect, data, monaco, editor, selectedFile, mainFile }: Props) => {
 
   const [ isStuck, setIsStuck ] = React.useState(false);
-  const [ isDrawerOpen, setIsDrawerOpen ] = React.useState(false);
-  const [ activeTab, setActiveTab ] = React.useState('explorer');
+  const [ isDrawerOpen, setIsDrawerOpen ] = useBoolean(false);
+  const [ tabIndex, setTabIndex ] = React.useState(0);
   const [ searchValue, setSearchValue ] = React.useState('');
-  const [ actionBarRenderer, setActionBarRenderer ] = React.useState<() => React.JSX.Element>();
+  const [ actionBarRenderer, setActionBarRenderer ] = React.useState<() => JSX.Element>();
 
   const themeColors = useThemeColors();
 
-  const tabProps: Partial<TabsTriggerProps> = {
+  const tabProps: HTMLChakraProps<'button'> = {
     fontFamily: 'heading',
     textTransform: 'uppercase',
     fontSize: '11px',
@@ -48,22 +47,14 @@ const CodeEditorSideBar = ({ onFileSelect, data, monaco, editor, selectedFile, m
     letterSpacing: 0.3,
   };
 
-  const handleScrollThrottled = React.useRef(throttle((event: React.SyntheticEvent) => {
+  const handleScrollThrottled = React.useRef(_throttle((event: React.SyntheticEvent) => {
     setIsStuck((event.target as HTMLDivElement).scrollTop > 0);
   }, 100));
 
   const handleFileSelect = React.useCallback((index: number, lineNumber?: number) => {
-    isDrawerOpen && setIsDrawerOpen(false);
+    isDrawerOpen && setIsDrawerOpen.off();
     onFileSelect(index, lineNumber);
   }, [ isDrawerOpen, onFileSelect, setIsDrawerOpen ]);
-
-  const handleSideBarButtonClick = React.useCallback(() => {
-    setIsDrawerOpen((prev) => !prev);
-  }, []);
-
-  const handleTabChange = React.useCallback(({ value }: { value: string }) => {
-    setActiveTab(value);
-  }, []);
 
   React.useEffect(() => {
     if (editor && monaco) {
@@ -76,7 +67,7 @@ const CodeEditorSideBar = ({ onFileSelect, data, monaco, editor, selectedFile, m
         contextMenuGroupId: 'navigation',
         contextMenuOrder: 1.5,
         run: function() {
-          setActiveTab('explorer');
+          setTabIndex(0);
         },
       });
 
@@ -89,7 +80,7 @@ const CodeEditorSideBar = ({ onFileSelect, data, monaco, editor, selectedFile, m
         contextMenuGroupId: 'navigation',
         contextMenuOrder: 1.6,
         run: function(editor) {
-          setActiveTab('search');
+          setTabIndex(1);
           const selection = editor.getSelection();
           const selectedValue = selection ? editor.getModel()?.getValueInRange(selection) : '';
           setSearchValue(selectedValue || '');
@@ -120,8 +111,8 @@ const CodeEditorSideBar = ({ onFileSelect, data, monaco, editor, selectedFile, m
         borderTopRightRadius="md"
         borderBottomRightRadius="md"
       >
-        <TabsRoot unmountOnExit={ false } variant="unstyled" size="free" value={ activeTab } onValueChange={ handleTabChange }>
-          <TabsList
+        <Tabs isLazy lazyBehavior="keepMounted" variant="unstyled" size="13px" index={ tabIndex } onChange={ setTabIndex }>
+          <TabList
             columnGap={ 3 }
             position="sticky"
             top={ 0 }
@@ -129,37 +120,37 @@ const CodeEditorSideBar = ({ onFileSelect, data, monaco, editor, selectedFile, m
             bgColor={ themeColors['sideBar.background'] }
             zIndex="1"
             px={ 2 }
-            h="35px"
-            alignItems="center"
             boxShadow={ isStuck ? 'md' : 'none' }
             borderTopRightRadius="md"
           >
-            <TabsTrigger value="explorer" { ...tabProps } title={ `File explorer (${ shift + cmd }E)` }>Explorer</TabsTrigger>
-            <TabsTrigger value="search" { ...tabProps } title={ `Search in files (${ shift + cmd }F)` }>Search</TabsTrigger>
+            <Tab { ...tabProps } title={ `File explorer (${ shift + cmd }E)` }>Explorer</Tab>
+            <Tab { ...tabProps } title={ `Search in files (${ shift + cmd }F)` }>Search</Tab>
             { actionBarRenderer?.() }
-          </TabsList>
-          <TabsContent value="explorer" p={ 0 }>
-            <CodeEditorFileExplorer
-              data={ data }
-              onFileSelect={ handleFileSelect }
-              selectedFile={ selectedFile }
-              mainFile={ mainFile }
-              isActive={ activeTab === 'explorer' }
-              setActionBarRenderer={ setActionBarRenderer }
-            />
-          </TabsContent>
-          <TabsContent value="search" p={ 0 }>
-            <CodeEditorSearch
-              data={ data }
-              onFileSelect={ handleFileSelect }
-              monaco={ monaco }
-              isInputStuck={ isStuck }
-              isActive={ activeTab === 'search' }
-              setActionBarRenderer={ setActionBarRenderer }
-              defaultValue={ searchValue }
-            />
-          </TabsContent>
-        </TabsRoot>
+          </TabList>
+          <TabPanels>
+            <TabPanel p={ 0 }>
+              <CodeEditorFileExplorer
+                data={ data }
+                onFileSelect={ handleFileSelect }
+                selectedFile={ selectedFile }
+                mainFile={ mainFile }
+                isActive={ tabIndex === 0 }
+                setActionBarRenderer={ setActionBarRenderer }
+              />
+            </TabPanel>
+            <TabPanel p={ 0 }>
+              <CodeEditorSearch
+                data={ data }
+                onFileSelect={ handleFileSelect }
+                monaco={ monaco }
+                isInputStuck={ isStuck }
+                isActive={ tabIndex === 1 }
+                setActionBarRenderer={ setActionBarRenderer }
+                defaultValue={ searchValue }
+              />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </Box>
       <Box
         boxSize="24px"
@@ -172,7 +163,7 @@ const CodeEditorSideBar = ({ onFileSelect, data, monaco, editor, selectedFile, m
         borderTopLeftRadius="4px"
         borderBottomLeftRadius="4px"
         boxShadow="md"
-        onClick={ handleSideBarButtonClick }
+        onClick={ setIsDrawerOpen.toggle }
         zIndex="1"
         transitionProperty="right"
         transitionDuration="normal"

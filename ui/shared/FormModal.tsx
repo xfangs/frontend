@@ -1,40 +1,53 @@
-import type { DialogRootProps } from '@chakra-ui/react';
-import { Box, Text } from '@chakra-ui/react';
+import {
+  Box,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  Text,
+} from '@chakra-ui/react';
 import React, { useCallback } from 'react';
 
-import { DialogBody, DialogContent, DialogHeader, DialogRoot } from 'toolkit/chakra/dialog';
+import useIsMobile from 'lib/hooks/useIsMobile';
 import FormSubmitAlert from 'ui/shared/FormSubmitAlert';
 
-interface Props<TData> extends Omit<DialogRootProps, 'children'> {
+interface Props<TData> {
+  isOpen: boolean;
+  onClose: () => void;
   data?: TData;
   title: string;
-  text?: string;
-  renderForm: () => React.JSX.Element;
-  isAlertVisible?: boolean;
-  setAlertVisible?: (isAlertVisible: boolean) => void;
+  text: string;
+  renderForm: () => JSX.Element;
+  isAlertVisible: boolean;
+  setAlertVisible: (isAlertVisible: boolean) => void;
 }
 
 export default function FormModal<TData>({
-  open,
-  onOpenChange,
+  isOpen,
+  onClose,
   title,
   text,
   renderForm,
   isAlertVisible,
   setAlertVisible,
-  ...rest
 }: Props<TData>) {
 
-  const handleOpenChange = useCallback(({ open }: { open: boolean }) => {
-    !open && setAlertVisible?.(false);
-    onOpenChange?.({ open });
-  }, [ onOpenChange, setAlertVisible ]);
+  const onModalClose = useCallback(() => {
+    setAlertVisible(false);
+    onClose();
+  }, [ onClose, setAlertVisible ]);
+
+  const isMobile = useIsMobile();
 
   return (
-    <DialogRoot open={ open } onOpenChange={ handleOpenChange } size={{ lgDown: 'full', lg: 'md' }} { ...rest }>
-      <DialogContent>
-        <DialogHeader>{ title }</DialogHeader>
-        <DialogBody>
+    <Modal isOpen={ isOpen } onClose={ onModalClose } size={ isMobile ? 'full' : 'md' }>
+      <ModalOverlay/>
+      <ModalContent>
+        <ModalHeader fontWeight="500" textStyle="h3">{ title }</ModalHeader>
+        <ModalCloseButton/>
+        <ModalBody>
           { (isAlertVisible || text) && (
             <Box marginBottom={{ base: 6, lg: 8 }}>
               { text && (
@@ -46,8 +59,8 @@ export default function FormModal<TData>({
             </Box>
           ) }
           { renderForm() }
-        </DialogBody>
-      </DialogContent>
-    </DialogRoot>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 }

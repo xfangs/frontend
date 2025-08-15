@@ -1,5 +1,3 @@
-import type { NextRouter } from 'next/router';
-import { useRouter } from 'next/router';
 import React from 'react';
 
 interface Props {
@@ -8,33 +6,21 @@ interface Props {
   onError?: (error: Error) => void;
 }
 
-interface PropsWithRouter extends Props {
-  router: NextRouter;
-}
-
 interface State {
   hasError: boolean;
   error?: Error;
-  errorPathname?: string;
 }
 
-class ErrorBoundary extends React.PureComponent<PropsWithRouter, State> {
+class ErrorBoundary extends React.PureComponent<Props, State> {
   state: State = {
     hasError: false,
   };
 
-  static getDerivedStateFromProps(props: PropsWithRouter, state: State) {
-    if (state.hasError && state.errorPathname) {
-      if (props.router.pathname !== state.errorPathname) {
-        return { hasError: false, error: undefined, errorPathname: undefined };
-      }
-    }
-
-    return null;
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error) {
-    this.setState({ hasError: true, error, errorPathname: this.props.router.pathname });
     this.props.onError?.(error);
   }
 
@@ -47,9 +33,4 @@ class ErrorBoundary extends React.PureComponent<PropsWithRouter, State> {
   }
 }
 
-const WrappedErrorBoundary = (props: Props) => {
-  const router = useRouter();
-  return <ErrorBoundary { ...props } router={ router }/>;
-};
-
-export default React.memo(WrappedErrorBoundary);
+export default ErrorBoundary;

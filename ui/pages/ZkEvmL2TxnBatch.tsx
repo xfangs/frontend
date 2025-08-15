@@ -1,22 +1,21 @@
 import { useRouter } from 'next/router';
 import React from 'react';
 
-import type { TabItemRegular } from 'toolkit/components/AdaptiveTabs/types';
+import type { RoutedTab } from 'ui/shared/Tabs/types';
 
 import useApiQuery from 'lib/api/useApiQuery';
 import { useAppContext } from 'lib/contexts/app';
-import throwOnAbsentParamError from 'lib/errors/throwOnAbsentParamError';
-import throwOnResourceLoadError from 'lib/errors/throwOnResourceLoadError';
 import getQueryParamString from 'lib/router/getQueryParamString';
 import { TX_ZKEVM_L2 } from 'stubs/tx';
 import { generateListStub } from 'stubs/utils';
 import { ZKEVM_L2_TXN_BATCH } from 'stubs/zkEvmL2';
-import RoutedTabs from 'toolkit/components/RoutedTabs/RoutedTabs';
 import TextAd from 'ui/shared/ad/TextAd';
 import PageTitle from 'ui/shared/Page/PageTitle';
 import useQueryWithPages from 'ui/shared/pagination/useQueryWithPages';
-import ZkEvmL2TxnBatchDetails from 'ui/txnBatches/zkEvmL2/ZkEvmL2TxnBatchDetails';
+import RoutedTabs from 'ui/shared/Tabs/RoutedTabs';
+import TabsSkeleton from 'ui/shared/Tabs/TabsSkeleton';
 import TxsWithFrontendSorting from 'ui/txs/TxsWithFrontendSorting';
+import ZkEvmL2TxnBatchDetails from 'ui/zkEvmL2TxnBatches/ZkEvmL2TxnBatchDetails';
 
 const ZkEvmL2TxnBatch = () => {
   const router = useRouter();
@@ -24,7 +23,7 @@ const ZkEvmL2TxnBatch = () => {
   const number = getQueryParamString(router.query.number);
   const tab = getQueryParamString(router.query.tab);
 
-  const batchQuery = useApiQuery('general:zkevm_l2_txn_batch', {
+  const batchQuery = useApiQuery('zkevm_l2_txn_batch', {
     pathParams: { number },
     queryOptions: {
       enabled: Boolean(number),
@@ -33,21 +32,26 @@ const ZkEvmL2TxnBatch = () => {
   });
 
   const batchTxsQuery = useQueryWithPages({
-    resourceName: 'general:zkevm_l2_txn_batch_txs',
+    resourceName: 'zkevm_l2_txn_batch_txs',
     pathParams: { number },
     options: {
       enabled: Boolean(!batchQuery.isPlaceholderData && batchQuery.data?.number && tab === 'txs'),
       // there is no pagination in zkevm_l2_txn_batch_txs
-      placeholderData: generateListStub<'general:zkevm_l2_txn_batch_txs'>(TX_ZKEVM_L2, 50, { next_page_params: null }),
+      placeholderData: generateListStub<'zkevm_l2_txn_batch_txs'>(TX_ZKEVM_L2, 50, { next_page_params: null }),
     },
   });
 
-  throwOnAbsentParamError(number);
-  throwOnResourceLoadError(batchQuery);
+  if (!number) {
+    throw new Error('Tx batch not found', { cause: { status: 404 } });
+  }
 
-  const tabs: Array<TabItemRegular> = React.useMemo(() => ([
+  if (batchQuery.isError) {
+    throw new Error(undefined, { cause: batchQuery.error });
+  }
+
+  const tabs: Array<RoutedTab> = React.useMemo(() => ([
     { id: 'index', title: 'Details', component: <ZkEvmL2TxnBatchDetails query={ batchQuery }/> },
-    { id: 'txs', title: 'Transactions', component: <TxsWithFrontendSorting query={ batchTxsQuery }/> },
+    { id: 'txs', title: 'Transactions', component: <TxsWithFrontendSorting query={ batchTxsQuery } showSocketInfo={ false }/> },
   ].filter(Boolean)), [ batchQuery, batchTxsQuery ]);
 
   const backLink = React.useMemo(() => {
@@ -58,7 +62,7 @@ const ZkEvmL2TxnBatch = () => {
     }
 
     return {
-      label: 'Back to txn batches list',
+      label: 'Back to tx batches list',
       url: appProps.referrer,
     };
   }, [ appProps.referrer ]);
@@ -67,13 +71,14 @@ const ZkEvmL2TxnBatch = () => {
     <>
       <TextAd mb={ 6 }/>
       <PageTitle
-        title={ `Txn batch #${ number }` }
+        title={ `Tx batch #${ number }` }
         backLink={ backLink }
       />
-      <RoutedTabs
-        tabs={ tabs }
-        isLoading={ batchQuery.isPlaceholderData }
-      />
+      { batchQuery.isPlaceholderData ? <TabsSkeleton tabs={ tabs }/> : (
+        <RoutedTabs
+          tabs={ tabs }
+        />
+      ) }
     </>
   );
 };

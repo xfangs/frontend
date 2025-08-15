@@ -2,16 +2,19 @@ import { HStack, Box } from '@chakra-ui/react';
 import React from 'react';
 
 import config from 'configs/app';
-import RewardsButton from 'ui/rewards/RewardsButton';
+import NetworkLogo from 'ui/snippets/networkMenu/NetworkLogo';
+import ProfileMenuDesktop from 'ui/snippets/profileMenu/ProfileMenuDesktop';
 import SearchBar from 'ui/snippets/searchBar/SearchBar';
-import UserProfileDesktop from 'ui/snippets/user/profile/UserProfileDesktop';
-import UserWalletDesktop from 'ui/snippets/user/wallet/UserWalletDesktop';
+import WalletMenuDesktop from 'ui/snippets/walletMenu/WalletMenuDesktop';
+
+import Burger from './Burger';
 
 type Props = {
   renderSearchBar?: () => React.ReactNode;
-};
+  isMarketplaceAppPage?: boolean;
+}
 
-const HeaderDesktop = ({ renderSearchBar }: Props) => {
+const HeaderDesktop = ({ renderSearchBar, isMarketplaceAppPage }: Props) => {
 
   const searchBar = renderSearchBar ? renderSearchBar() : <SearchBar/>;
 
@@ -22,20 +25,21 @@ const HeaderDesktop = ({ renderSearchBar }: Props) => {
       width="100%"
       alignItems="center"
       justifyContent="center"
-      gap={ 6 }
+      gap={ 12 }
     >
+      { isMarketplaceAppPage && (
+        <Box display="flex" alignItems="center" gap={ 3 }>
+          <Burger isMarketplaceAppPage/>
+          <NetworkLogo isCollapsed/>
+        </Box>
+      ) }
       <Box width="100%">
         { searchBar }
       </Box>
-      { config.UI.navigation.layout === 'vertical' && (
-        <Box display="flex" gap={ 2 } flexShrink={ 0 }>
-          { config.features.rewards.isEnabled && <RewardsButton/> }
-          {
-            (config.features.account.isEnabled && <UserProfileDesktop/>) ||
-            (config.features.blockchainInteraction.isEnabled && <UserWalletDesktop/>)
-          }
-        </Box>
-      ) }
+      <Box display="flex">
+        { config.features.account.isEnabled && <ProfileMenuDesktop/> }
+        { config.features.blockchainInteraction.isEnabled && <WalletMenuDesktop/> }
+      </Box>
     </HStack>
   );
 };

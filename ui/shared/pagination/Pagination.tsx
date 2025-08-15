@@ -1,18 +1,15 @@
-import type { HTMLChakraProps } from '@chakra-ui/react';
-import { Flex } from '@chakra-ui/react';
+import { Button, Skeleton, Flex, IconButton, chakra } from '@chakra-ui/react';
 import React from 'react';
 
 import type { PaginationParams } from './types';
 
-import { Button } from 'toolkit/chakra/button';
-import { IconButton } from 'toolkit/chakra/icon-button';
-import { Skeleton } from 'toolkit/chakra/skeleton';
 import IconSvg from 'ui/shared/IconSvg';
 
-interface Props extends PaginationParams, Omit<HTMLChakraProps<'div'>, 'page' | 'direction'> {}
+interface Props extends PaginationParams {
+  className?: string;
+}
 
-const Pagination = (props: Props) => {
-  const { page, onNextPageClick, onPrevPageClick, resetPage, hasPages, hasNextPage, canGoBackwards, isLoading, isVisible, ...rest } = props;
+const Pagination = ({ page, onNextPageClick, onPrevPageClick, resetPage, hasPages, hasNextPage, className, canGoBackwards, isLoading, isVisible }: Props) => {
 
   if (!isVisible) {
     return null;
@@ -22,55 +19,63 @@ const Pagination = (props: Props) => {
 
   return (
     <Flex
-      as="nav"
+      className={ className }
+      fontSize="sm"
       alignItems="center"
-      { ...rest }
     >
-      <Skeleton loading={ showSkeleton } mr={ 3 }>
+      <Skeleton isLoaded={ !showSkeleton } display="inline-block" mr={ 4 } borderRadius="base">
         <Button
-          variant="pagination"
+          variant="outline"
           size="sm"
           onClick={ resetPage }
-          disabled={ page === 1 || isLoading }
+          isDisabled={ page === 1 || isLoading }
         >
-          First
+        First
         </Button>
       </Skeleton>
-      <IconButton
-        aria-label="Prev page"
-        variant="pagination"
-        boxSize={ 8 }
-        onClick={ onPrevPageClick }
-        disabled={ !canGoBackwards || isLoading || page === 1 }
-        loadingSkeleton={ showSkeleton }
-      >
-        <IconSvg name="arrows/east-mini" boxSize={ 5 }/>
-      </IconButton>
-      <Button
-        variant="pagination"
-        size="sm"
-        selected={ !showSkeleton }
-        pointerEvents="none"
-        loadingSkeleton={ showSkeleton }
-        mx={ 2 }
-        minW={ 8 }
-        px={ 2 }
-      >
-        { page }
-      </Button>
-      <IconButton
-        aria-label="Next page"
-        variant="pagination"
-        boxSize={ 8 }
-        onClick={ onNextPageClick }
-        disabled={ !hasNextPage || isLoading }
-        loadingSkeleton={ showSkeleton }
-      >
-        <IconSvg name="arrows/east-mini" boxSize={ 5 } transform="rotate(180deg)"/>
-      </IconButton>
+      <Skeleton isLoaded={ !showSkeleton } display="inline-block" mr={ 3 } borderRadius="base">
+        <IconButton
+          variant="outline"
+          onClick={ onPrevPageClick }
+          size="sm"
+          aria-label="Prev page"
+          w="36px"
+          icon={ <IconSvg name="arrows/east-mini" w={ 5 } h={ 5 }/> }
+          isDisabled={ !canGoBackwards || isLoading }
+        />
+      </Skeleton>
+      <Skeleton isLoaded={ !showSkeleton } display="inline-block" borderRadius="base">
+        <Button
+          variant="outline"
+          size="sm"
+          isActive
+          borderWidth="1px"
+          fontWeight={ 400 }
+          h={ 8 }
+          minW="36px"
+          cursor="unset"
+        >
+          { page }
+        </Button>
+      </Skeleton>
+      <Skeleton isLoaded={ !showSkeleton } display="inline-block" ml={ 3 } borderRadius="base">
+        <IconButton
+          variant="outline"
+          onClick={ onNextPageClick }
+          size="sm"
+          aria-label="Next page"
+          w="36px"
+          icon={ <IconSvg name="arrows/east-mini" w={ 5 } h={ 5 } transform="rotate(180deg)"/> }
+          isDisabled={ !hasNextPage || isLoading }
+        />
+      </Skeleton>
+      { /* not implemented yet */ }
+      { /* <Flex alignItems="center" width="132px" ml={ 16 } display={{ base: 'none', lg: 'flex' }}>
+            Go to <Input w="84px" size="xs" ml={ 2 }/>
+      </Flex> */ }
     </Flex>
 
   );
 };
 
-export default React.memo(Pagination);
+export default chakra(Pagination);

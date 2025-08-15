@@ -1,17 +1,20 @@
 import { Grid, Text, Flex } from '@chakra-ui/react';
 import React from 'react';
 
-import type { ItemsProps } from './types';
 import type { SearchResultLabel } from 'types/api/search';
 
-import { toBech32Address } from 'lib/address/bech32';
 import highlightText from 'lib/highlightText';
 import HashStringShortenDynamic from 'ui/shared/HashStringShortenDynamic';
 import IconSvg from 'ui/shared/IconSvg';
 
-const SearchBarSuggestLabel = ({ data, isMobile, searchTerm, addressFormat }: ItemsProps<SearchResultLabel>) => {
+interface Props {
+  data: SearchResultLabel;
+  isMobile: boolean | undefined;
+  searchTerm: string;
+}
+
+const SearchBarSuggestLabel = ({ data, isMobile, searchTerm }: Props) => {
   const icon = <IconSvg name="publictags_slim" boxSize={ 5 } color="gray.500"/>;
-  const hash = data.filecoin_robust_address || (addressFormat === 'bech32' ? toBech32Address(data.address_hash) : data.address_hash);
 
   const name = (
     <Text
@@ -28,9 +31,9 @@ const SearchBarSuggestLabel = ({ data, isMobile, searchTerm, addressFormat }: It
     <Text
       overflow="hidden"
       whiteSpace="nowrap"
-      color="text.secondary"
+      variant="secondary"
     >
-      <HashStringShortenDynamic hash={ hash } noTooltip/>
+      <HashStringShortenDynamic hash={ data.address } isTooltipDisabled/>
     </Text>
   );
 

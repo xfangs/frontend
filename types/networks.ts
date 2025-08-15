@@ -13,7 +13,6 @@ export interface FeaturedNetwork {
 }
 
 export interface NetworkExplorer {
-  logo?: string;
   title: string;
   baseUrl: string;
   paths: {
@@ -24,6 +23,4 @@ export interface NetworkExplorer {
   };
 }
 
-export type NetworkVerificationTypeEnvs = 'mining' | 'validation';
-export type NetworkVerificationTypeComputed = 'posting' | 'sequencing';
-export type NetworkVerificationType = NetworkVerificationTypeEnvs | NetworkVerificationTypeComputed;
+export type NetworkVerificationType = 'mining' | 'validation';

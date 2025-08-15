@@ -1,52 +1,39 @@
-import { Separator, Flex, VStack } from '@chakra-ui/react';
+import { Divider, Flex, Skeleton, VStack } from '@chakra-ui/react';
 import React from 'react';
-
-import { Badge } from 'toolkit/chakra/badge';
-import { Skeleton } from 'toolkit/chakra/skeleton';
 
 interface Props {
   methodId: string;
   methodCall: string;
   isLoading?: boolean;
-  rightSlot?: React.ReactNode;
 }
 
-const Item = ({ label, children, isLoading }: { label: string; children: React.ReactNode; isLoading?: boolean }) => {
+const Item = ({ label, text, isLoading }: { label: string; text: string; isLoading?: boolean}) => {
   return (
     <Flex
-      w="100%"
       columnGap={ 5 }
       rowGap={ 2 }
       px={{ base: 0, lg: 4 }}
       flexDir={{ base: 'column', lg: 'row' }}
-      alignItems={{ base: 'flex-start', lg: 'center' }}
+      alignItems="flex-start"
     >
-      <Skeleton fontWeight={ 600 } w={{ base: 'auto', lg: '80px' }} flexShrink={ 0 } loading={ isLoading }>
+      <Skeleton fontWeight={ 600 } w={{ base: 'auto', lg: '80px' }} flexShrink={ 0 } isLoaded={ !isLoading }>
         { label }
       </Skeleton >
-      { children }
+      <Skeleton isLoaded={ !isLoading } whiteSpace="pre-wrap">{ text }</Skeleton>
     </Flex>
   );
 };
 
-const LogDecodedInputDataHeader = ({ methodId, methodCall, isLoading, rightSlot }: Props) => {
+const LogDecodedInputDataHeader = ({ methodId, methodCall, isLoading }: Props) => {
   return (
     <VStack
       align="flex-start"
-      separator={ <Separator/> }
-      textStyle="sm"
-      flexGrow={ 1 }
-      w="100%"
+      divider={ <Divider/> }
+      fontSize="sm"
+      lineHeight={ 5 }
     >
-      <Flex columnGap={ 2 } w="100%">
-        <Item label="Method id" isLoading={ isLoading }>
-          <Badge loading={ isLoading }>{ methodId }</Badge>
-        </Item>
-        { rightSlot }
-      </Flex>
-      <Item label="Call" isLoading={ isLoading }>
-        <Skeleton loading={ isLoading } whiteSpace="pre-wrap" flexGrow={ 1 }>{ methodCall }</Skeleton>
-      </Item>
+      <Item label="Method id" text={ methodId } isLoading={ isLoading }/>
+      <Item label="Call" text={ methodCall } isLoading={ isLoading }/>
     </VStack>
   );
 };

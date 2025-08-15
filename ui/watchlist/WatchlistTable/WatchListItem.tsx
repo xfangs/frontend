@@ -1,14 +1,12 @@
-import { Box, Text, HStack, Flex } from '@chakra-ui/react';
+import { Box, Switch, Text, HStack, Flex, Skeleton } from '@chakra-ui/react';
 import { useMutation } from '@tanstack/react-query';
 import React, { useCallback, useState } from 'react';
 
 import type { WatchlistAddress } from 'types/api/account';
 
 import useApiFetch from 'lib/api/useApiFetch';
-import { Skeleton } from 'toolkit/chakra/skeleton';
-import { Switch } from 'toolkit/chakra/switch';
-import { Tag } from 'toolkit/chakra/tag';
-import { toaster } from 'toolkit/chakra/toaster';
+import useToast from 'lib/hooks/useToast';
+import Tag from 'ui/shared/chakra/Tag';
 import ListItemMobile from 'ui/shared/ListItemMobile/ListItemMobile';
 import TableItemActionButtons from 'ui/shared/TableItemActionButtons';
 
@@ -19,10 +17,9 @@ interface Props {
   isLoading?: boolean;
   onEditClick: (data: WatchlistAddress) => void;
   onDeleteClick: (data: WatchlistAddress) => void;
-  hasEmail: boolean;
 }
 
-const WatchListItem = ({ item, isLoading, onEditClick, onDeleteClick, hasEmail }: Props) => {
+const WatchListItem = ({ item, isLoading, onEditClick, onDeleteClick }: Props) => {
   const [ notificationEnabled, setNotificationEnabled ] = useState(item.notification_methods.email);
   const [ switchDisabled, setSwitchDisabled ] = useState(false);
   const onItemEditClick = useCallback(() => {
@@ -33,40 +30,53 @@ const WatchListItem = ({ item, isLoading, onEditClick, onDeleteClick, hasEmail }
     return onDeleteClick(item);
   }, [ item, onDeleteClick ]);
 
+  const errorToast = useToast();
   const apiFetch = useApiFetch();
 
   const showErrorToast = useCallback(() => {
-    toaster.error({
-      title: 'Error',
+    errorToast({
+      position: 'top-right',
       description: 'There has been an error processing your request',
+      colorScheme: 'red',
+      status: 'error',
+      variant: 'subtle',
+      isClosable: true,
+      icon: null,
     });
-  }, [ ]);
+  }, [ errorToast ]);
 
+  const notificationToast = useToast();
   const showNotificationToast = useCallback((isOn: boolean) => {
-    toaster.success({
-      title: 'Success',
+    notificationToast({
+      position: 'top-right',
       description: isOn ? 'Email notification is ON' : 'Email notification is OFF',
+      colorScheme: 'green',
+      status: 'success',
+      variant: 'subtle',
+      title: 'Success',
+      isClosable: true,
+      icon: null,
     });
-  }, [ ]);
+  }, [ notificationToast ]);
 
-  const { mutate } = useMutation<WatchlistAddress>({
+  const { mutate } = useMutation({
     mutationFn: () => {
       setSwitchDisabled(true);
       const body = { ...item, notification_methods: { email: !notificationEnabled } };
       setNotificationEnabled(prevState => !prevState);
-      return apiFetch('general:watchlist', {
-        pathParams: { id: String(item.id) },
+      return apiFetch('watchlist', {
+        pathParams: { id: item.id },
         fetchParams: { method: 'PUT', body },
-      }) as Promise<WatchlistAddress>;
+      });
     },
     onError: () => {
       showErrorToast();
       setNotificationEnabled(prevState => !prevState);
       setSwitchDisabled(false);
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setSwitchDisabled(false);
-      showNotificationToast(data.notification_methods.email);
+      showNotificationToast(notificationEnabled);
     },
   });
 
@@ -78,21 +88,22 @@ const WatchListItem = ({ item, isLoading, onEditClick, onDeleteClick, hasEmail }
     <ListItemMobile>
       <Box maxW="100%">
         <WatchListAddressItem item={ item } isLoading={ isLoading }/>
-        <HStack gap={ 3 } mt={ 6 }>
-          <Text textStyle="sm" fontWeight={ 500 }>Private tag</Text>
-          <Tag loading={ isLoading } truncated>{ item.name }</Tag>
+        <HStack spacing={ 3 } mt={ 6 }>
+          <Text fontSize="sm" fontWeight={ 500 }>Private tag</Text>
+          <Tag isLoading={ isLoading } isTruncated>{ item.name }</Tag>
         </HStack>
       </Box>
       <Flex alignItems="center" justifyContent="space-between" mt={ 6 } w="100%">
-        <HStack gap={ 3 }>
-          <Text textStyle="sm" fontWeight={ 500 }>Email notification</Text>
-          <Skeleton loading={ isLoading } display="inline-block">
+        <HStack spacing={ 3 }>
+          <Text fontSize="sm" fontWeight={ 500 }>Email notification</Text>
+          <Skeleton isLoaded={ !isLoading } display="inline-block">
             <Switch
+              colorScheme="blue"
               size="md"
-              checked={ notificationEnabled }
-              onCheckedChange={ onSwitch }
+              isChecked={ notificationEnabled }
+              onChange={ onSwitch }
               aria-label="Email notification"
-              disabled={ !hasEmail || switchDisabled }
+              isDisabled={ switchDisabled }
             />
           </Skeleton>
         </HStack>

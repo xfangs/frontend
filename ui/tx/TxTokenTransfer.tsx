@@ -1,15 +1,15 @@
-import { Box } from '@chakra-ui/react';
+import { Hide, Show } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import React from 'react';
 
 import type { TokenType } from 'types/api/token';
-import type { TokenTransfer } from 'types/api/tokenTransfer';
 
+import { SECOND } from 'lib/consts';
 import getFilterValuesFromQuery from 'lib/getFilterValuesFromQuery';
+import { apos } from 'lib/html-entities';
 import { TOKEN_TYPE_IDS } from 'lib/token/tokenTypes';
 import { getTokenTransfersStub } from 'stubs/token';
-import { apos } from 'toolkit/utils/htmlEntities';
-import ActionBar, { ACTION_BAR_HEIGHT_DESKTOP } from 'ui/shared/ActionBar';
+import ActionBar from 'ui/shared/ActionBar';
 import DataFetchAlert from 'ui/shared/DataFetchAlert';
 import DataListDisplay from 'ui/shared/DataListDisplay';
 import Pagination from 'ui/shared/pagination/Pagination';
@@ -19,26 +19,22 @@ import TokenTransferList from 'ui/shared/TokenTransfer/TokenTransferList';
 import TokenTransferTable from 'ui/shared/TokenTransfer/TokenTransferTable';
 import TxPendingAlert from 'ui/tx/TxPendingAlert';
 import TxSocketAlert from 'ui/tx/TxSocketAlert';
-
-import type { TxQuery } from './useTxQuery';
+import useFetchTxInfo from 'ui/tx/useFetchTxInfo';
 
 const getTokenFilterValue = (getFilterValuesFromQuery<TokenType>).bind(null, TOKEN_TYPE_IDS);
 
-interface Props {
-  txQuery: TxQuery;
-  tokenTransferFilter?: (data: TokenTransfer) => boolean;
-}
+const TxTokenTransfer = () => {
+  const txsInfo = useFetchTxInfo({ updateDelay: 5 * SECOND });
 
-const TxTokenTransfer = ({ txQuery, tokenTransferFilter }: Props) => {
   const router = useRouter();
 
   const [ typeFilter, setTypeFilter ] = React.useState<Array<TokenType>>(getTokenFilterValue(router.query.type) || []);
 
   const tokenTransferQuery = useQueryWithPages({
-    resourceName: 'general:tx_token_transfers',
-    pathParams: { hash: txQuery.data?.hash.toString() },
+    resourceName: 'tx_token_transfers',
+    pathParams: { hash: txsInfo.data?.hash.toString() },
     options: {
-      enabled: !txQuery.isPlaceholderData && Boolean(txQuery.data?.status && txQuery.data?.hash),
+      enabled: !txsInfo.isPlaceholderData && Boolean(txsInfo.data?.status && txsInfo.data?.hash),
       placeholderData: getTokenTransfersStub(),
     },
     filters: { type: typeFilter },
@@ -49,35 +45,25 @@ const TxTokenTransfer = ({ txQuery, tokenTransferFilter }: Props) => {
     setTypeFilter(nextValue);
   }, [ tokenTransferQuery ]);
 
-  if (!txQuery.isPending && !txQuery.isPlaceholderData && !txQuery.isError && !txQuery.data.status) {
-    return txQuery.socketStatus ? <TxSocketAlert status={ txQuery.socketStatus }/> : <TxPendingAlert/>;
+  if (!txsInfo.isPending && !txsInfo.isPlaceholderData && !txsInfo.isError && !txsInfo.data.status) {
+    return txsInfo.socketStatus ? <TxSocketAlert status={ txsInfo.socketStatus }/> : <TxPendingAlert/>;
   }
 
-  if (txQuery.isError || tokenTransferQuery.isError) {
+  if (txsInfo.isError || tokenTransferQuery.isError) {
     return <DataFetchAlert/>;
   }
 
   const numActiveFilters = typeFilter.length;
   const isActionBarHidden = !numActiveFilters && !tokenTransferQuery.data?.items.length;
 
-  let items: Array<TokenTransfer> = [];
-
-  if (tokenTransferQuery.data?.items) {
-    if (tokenTransferQuery.isPlaceholderData) {
-      items = tokenTransferQuery.data?.items;
-    } else {
-      items = tokenTransferFilter ? tokenTransferQuery.data.items.filter(tokenTransferFilter) : tokenTransferQuery.data.items;
-    }
-  }
-
   const content = tokenTransferQuery.data?.items ? (
     <>
-      <Box hideBelow="lg">
-        <TokenTransferTable data={ items } top={ isActionBarHidden ? 0 : ACTION_BAR_HEIGHT_DESKTOP } isLoading={ tokenTransferQuery.isPlaceholderData }/>
-      </Box>
-      <Box hideFrom="lg">
-        <TokenTransferList data={ items } isLoading={ tokenTransferQuery.isPlaceholderData }/>
-      </Box>
+      <Hide below="lg" ssr={ false }>
+        <TokenTransferTable data={ tokenTransferQuery.data?.items } top={ isActionBarHidden ? 0 : 80 } isLoading={ tokenTransferQuery.isPlaceholderData }/>
+      </Hide>
+      <Show below="lg" ssr={ false }>
+        <TokenTransferList data={ tokenTransferQuery.data?.items } isLoading={ tokenTransferQuery.isPlaceholderData }/>
+      </Show>
     </>
   ) : null;
 
@@ -95,17 +81,16 @@ const TxTokenTransfer = ({ txQuery, tokenTransferFilter }: Props) => {
 
   return (
     <DataListDisplay
-      isError={ txQuery.isError || tokenTransferQuery.isError }
-      itemsNum={ items.length }
+      isError={ txsInfo.isError || tokenTransferQuery.isError }
+      items={ tokenTransferQuery.data?.items }
       emptyText="There are no token transfers."
       filterProps={{
         emptyFilteredText: `Couldn${ apos }t find any token transfer that matches your query.`,
         hasActiveFilters: Boolean(numActiveFilters),
       }}
+      content={ content }
       actionBar={ actionBar }
-    >
-      { content }
-    </DataListDisplay>
+    />
   );
 };
 
